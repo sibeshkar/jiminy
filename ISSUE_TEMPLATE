@@ -1,0 +1,12 @@
+
+(First, please check https://github.com/openai/jiminy/wiki/Solutions-to-common-problems for solutions to many common problems)
+
+### Expected behavior
+
+### Actual behavior
+
+### Versions
+Please include the result of running
+```
+$ uname -a ; python --version; pip show jiminy gym tensorflow numpy go-vncdriver Pillow
+```
