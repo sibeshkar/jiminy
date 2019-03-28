@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# This is the entrypoint for the jiminy:test docker image
+
+# Login to our docker registry
+docker login quay.io/boxware -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+
+exec "$@"
