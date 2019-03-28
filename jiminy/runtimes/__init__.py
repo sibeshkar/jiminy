@@ -7,8 +7,8 @@ with open(os.path.join(os.path.dirname(__file__), '../runtimes.yml')) as f:
     spec = yaml.load(f, Loader=yaml.FullLoader)
 
 # If you have a local repo, do something like
-# export OPENAI_DOCKER_REPO=docker.openai.com  (this one only for openai folks)
-docker_repo = os.environ.get('OPENAI_DOCKER_REPO', 'quay.io/openai')
+# export BOXWARE_DOCKER_REPO=docker.boxware.com  (this one only for boxware folks)
+docker_repo = os.environ.get('BOXWARE_DOCKER_REPO', 'quay.io/boxware')
 
 register_runtime(
     id='gym-core',

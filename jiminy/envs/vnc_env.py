@@ -21,7 +21,7 @@ import go_vncdriver
 logger = logging.getLogger(__name__)
 extra_logger = logging.getLogger('jiminy.extra.'+__name__)
 
-if os.environ.get('UNIVERSE_VNCDRIVER', None) == 'go':
+if os.environ.get('JIMINY_VNCDRIVER', None) == 'go':
     # Importing the Go driver early is desirable, so that people get
     # errors if it's not present. Also sometimes if go_vncdriver is
     # loaded after TensorFlow it will crash.
@@ -61,7 +61,7 @@ def vnc_session(which=None):
     return go_vncdriver()
 
     if which is None:
-        which = os.environ.get('UNIVERSE_VNCDRIVER')
+        which = os.environ.get('JIMINY_VNCDRIVER')
 
     if isinstance(which, type):
         return which
@@ -81,7 +81,7 @@ def vnc_session(which=None):
             return go
         except ImportError as e:
             logger.info("Go driver failed to import: {}".format(e))
-            logger.info("Using pure Python vncdriver implementation. Run 'pip install go-vncdriver' to install the more performant Go implementation. Optionally set the environment variable UNIVERSE_VNCDRIVER='go' to force its use.")
+            logger.info("Using pure Python vncdriver implementation. Run 'pip install go-vncdriver' to install the more performant Go implementation. Optionally set the environment variable JIMINY_VNCDRIVER='go' to force its use.")
             return py_vncdriver()
     else:
         raise error.Error('Invalid VNCSession driver: {!r}'.format(which))
@@ -146,7 +146,7 @@ class VNCEnv(vectorized.Env):
                   record=False,
                   sample_env_ids=None,
     ):
-        """Universe method to configure the environment.
+        """Jiminy method to configure the environment.
 
         Args:
 

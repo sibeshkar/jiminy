@@ -39,7 +39,7 @@ RUN pip install go-vncdriver>=0.4.0
 RUN pip install pytest
 
 # Force the container to use the go vnc driver
-ENV UNIVERSE_VNCDRIVER='go'
+ENV JIMINY_VNCDRIVER='go'
 
 WORKDIR /usr/local/jiminy/
 

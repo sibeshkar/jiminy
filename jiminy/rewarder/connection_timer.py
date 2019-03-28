@@ -30,10 +30,10 @@ def measure_clock_skew(label, host):
     process = reactor.spawnProcess(skew, '/usr/sbin/ntpdate', cmd, {})
     # process = reactor.spawnProcess(skew, '/bin/sleep', ['sleep', '2'], {})
 
-    t = float(os.environ.get('UNIVERSE_NTPDATE_TIMEOUT', 20))
+    t = float(os.environ.get('JIMINY_NTPDATE_TIMEOUT', 20))
     def timeout():
         if process.pid:
-            logger.error('[%s] %s call timed out after %ss; killing the subprocess. This is ok, but you could have more accurate timings by enabling UDP port 123 traffic to your env. (Alternatively, you can try increasing the timeout by setting environment variable UNIVERSE_NTPDATE_TIMEOUT=10.)', label, ' '.join(cmd), t)
+            logger.error('[%s] %s call timed out after %ss; killing the subprocess. This is ok, but you could have more accurate timings by enabling UDP port 123 traffic to your env. (Alternatively, you can try increasing the timeout by setting environment variable JIMINY_NTPDATE_TIMEOUT=10.)', label, ' '.join(cmd), t)
             process.signalProcess(signal.SIGKILL)
             process.reapProcess()
     # TODO: make this part of the connection string

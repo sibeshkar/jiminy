@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 setup(name='jiminy',
       version='0.21.5',
-      description="Universe: a software platform for measuring and training an AI's general intelligence across the world's supply of games, websites and other applications.",
-      url='https://github.com/openai/jiminy',
-      author='OpenAI',
-      author_email='jiminy@openai.com',
+      description="Jiminy: a software platform for measuring and training an AI's general intelligence across the world's supply of games, websites and other applications.",
+      url='https://github.com/sibeshkar/jiminy',
+      author='Boxware',
+      author_email='jiminy@boxware.com',
       packages=[package for package in find_packages()
                 if package.startswith('jiminy')],
       install_requires=[

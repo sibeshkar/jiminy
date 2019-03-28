@@ -148,10 +148,10 @@ def basic_auth_decode(header):
 
 import os
 def default_password():
-    if os.path.exists('/usr/local/openai/privileged_state/password'):
-        with open('/usr/local/openai/privileged_state/password') as f:
+    if os.path.exists('/usr/local/boxware/privileged_state/password'):
+        with open('/usr/local/boxware/privileged_state/password') as f:
             return f.read().strip()
-    return 'openai'
+    return 'boxware'
 
 import logging
 import time

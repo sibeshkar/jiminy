@@ -8,9 +8,9 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_MAX_EPISODE_SECONDS = 20 * 60.  # Default to 20 minutes if there is no explicit limit
 
-class UniverseTimeLimit(core.Wrapper):
+class JiminyTimeLimit(core.Wrapper):
     def __init__(self, env):
-        super(UniverseTimeLimit, self).__init__(env)
+        super(JiminyTimeLimit, self).__init__(env)
         self._max_episode_seconds = self.env.spec.max_episode_seconds
         self._max_episode_steps = self.env.spec.max_episode_steps
 
@@ -51,4 +51,4 @@ class UniverseTimeLimit(core.Wrapper):
         self._episode_started_at = time.time()
         self._elapsed_steps = 0
         return self.env.reset()
-TimeLimit = UniverseTimeLimit
+TimeLimit = JiminyTimeLimit

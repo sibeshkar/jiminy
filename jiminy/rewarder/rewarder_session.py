@@ -109,7 +109,7 @@ class RewarderSession(object):
         factory.protocol = rewarder_client.RewarderClient
 
         assert password, "Missing password: {} for rewarder session".format(password)
-        factory.headers = {'authorization': utils.basic_auth_encode(password), 'openai-observer': 'true' if observer else 'false'}
+        factory.headers = {'authorization': utils.basic_auth_encode(password), 'boxware-observer': 'true' if observer else 'false'}
         factory.i = i
 
         # Various important objects

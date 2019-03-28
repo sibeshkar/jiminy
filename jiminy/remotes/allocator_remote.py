@@ -24,9 +24,9 @@ logger = logging.getLogger(__name__)
 extra_logger = logging.getLogger('jiminy.extra.'+__name__)
 
 # Using gym for this
-_api_key = 'tyytjgq3envte2j9yv2e-{}'.format(os.environ.get('OPENAI_USER', os.environ.get('USER')))
-allocator_base = 'http://allocator.sci.openai-tech.com'
-# gym_base_url = 'http://api.gym.sci.openai-tech.com'
+_api_key = 'tyytjgq3envte2j9yv2e-{}'.format(os.environ.get('BOXWARE_USER', os.environ.get('USER')))
+allocator_base = 'http://allocator.sci.boxware-tech.com'
+# gym_base_url = 'http://api.gym.sci.boxware-tech.com'
 
 class Stop(Exception):
     pass
@@ -77,9 +77,9 @@ class AllocatorManager(threading.Thread):
 #         if api_key is None:
 #             api_key = scoreboard.api_key
 #         if api_key is None:
-#             raise gym.error.AuthenticationError("""You must provide an OpenAI Gym API key.
+#             raise gym.error.AuthenticationError("""You must provide an Boxware Gym API key.
 
-# (HINT: Set your API key using "gym.scoreboard.api_key = .." or "export OPENAI_GYM_API_KEY=..."). You can find your API key in the OpenAI Gym web interface: https://gym.openai.com/settings/profile.""")
+# (HINT: Set your API key using "gym.scoreboard.api_key = .." or "export BOXWARE_GYM_API_KEY=..."). You can find your API key in the Boxware Gym web interface: https://gym.boxware.com/settings/profile.""")
 
         if api_key is None:
             api_key = _api_key

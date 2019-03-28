@@ -170,8 +170,8 @@ def test_connect():
     vnc_session = get_vnc_session(env)
     rewarder_session = get_rewarder_session(env)
 
-    assert vnc_session._to_dict() == {'0': {'name': '0', 'subsample_level': 2, 'encoding': 'tight', 'fine_quality_level': 50, 'start_timeout': 7, 'address': 'example.com:5900', 'password': 'openai'}}
-    assert rewarder_session._to_dict() == {'0': {'start_timeout': 7, 'seed': None, 'name': '0', 'fps': 60, 'address': 'example.com:15900', 'env_id': 'flashgames.DuskDrive-v0', 'password': 'openai', 'skip_network_calibration': False, 'observer': False, 'label': '0:example.com:5900'}}
+    assert vnc_session._to_dict() == {'0': {'name': '0', 'subsample_level': 2, 'encoding': 'tight', 'fine_quality_level': 50, 'start_timeout': 7, 'address': 'example.com:5900', 'password': 'boxware'}}
+    assert rewarder_session._to_dict() == {'0': {'start_timeout': 7, 'seed': None, 'name': '0', 'fps': 60, 'address': 'example.com:15900', 'env_id': 'flashgames.DuskDrive-v0', 'password': 'boxware', 'skip_network_calibration': False, 'observer': False, 'label': '0:example.com:5900'}}
 
 def test_describe_handling():
     env = gym.make('flashgames.DuskDrive-v0')

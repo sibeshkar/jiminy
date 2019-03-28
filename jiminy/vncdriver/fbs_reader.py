@@ -33,7 +33,7 @@ class FBSReader(object):
         This is a hack and should be removed when we cleanly close our
         connections in fbs_writer.
 
-        https://github.com/openai/jiminy-envs/issues/41
+        https://github.com/boxware/jiminy-envs/issues/41
         """
         bytes = self.file.read(size)
         if len(bytes) != size:

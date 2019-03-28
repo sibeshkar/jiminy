@@ -28,14 +28,14 @@ class RewarderProtocol(websocket.WebSocketServerProtocol):
     connections = None
 
     def onConnect(self, request):
-        if not os.path.exists('/usr/local/openai/privileged_state/password'):
-            raise error.Error('No such file: /usr/local/openai/privileged_state/password. (HINT: did the init script run /app/jiminy-envs/base/openai-setpassword?)')
-        with open('/usr/local/openai/privileged_state/password') as f:
+        if not os.path.exists('/usr/local/boxware/privileged_state/password'):
+            raise error.Error('No such file: /usr/local/boxware/privileged_state/password. (HINT: did the init script run /app/jiminy-envs/base/boxware-setpassword?)')
+        with open('/usr/local/boxware/privileged_state/password') as f:
             password = f.read().strip()
 
         self._message_id = 0
         self._request = request
-        self._observer = request.headers.get('openai-observer') == 'true'
+        self._observer = request.headers.get('boxware-observer') == 'true'
         self.password = password
 
         logger.info('Client connecting: peer=%s observer=%s', request.peer, self._observer)
@@ -55,7 +55,7 @@ class RewarderProtocol(websocket.WebSocketServerProtocol):
         username, password = basic
         if username != self.password:
             logger.info('REJECT REASON: Invalid password: %r (%s expected; %s)', username, self.password, request.headers)
-            self.reject('Invalid password: {!r}. If you are using the allocator, you should see your password in the logs; if spinning up an environment by hand, it defaults to "openai". Connect as vnc://<ip>:<port>?password=<password>.'.format(username))
+            self.reject('Invalid password: {!r}. If you are using the allocator, you should see your password in the logs; if spinning up an environment by hand, it defaults to "boxware". Connect as vnc://<ip>:<port>?password=<password>.'.format(username))
             return
 
     def onOpen(self):

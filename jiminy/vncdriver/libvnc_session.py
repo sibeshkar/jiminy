@@ -51,8 +51,8 @@ class LibVNCSession(object):
 || libvncdriver is not installed                   ||
 || Try installing with "pip install libvncdriver"  ||
 || or use the go or python driver by setting       ||
-|| UNIVERSE_VNCDRIVER=go                                ||
-|| UNIVERSE_VNCDRIVER=py                                ||
+|| JIMINY_VNCDRIVER=go                             ||
+|| JIMINY_VNCDRIVER=py                             ||
  *=================================================*''')
         logger.info("Using libvncdriver's %s encoding" % encoding)
         self.driver = libvncdriver.VNCSession(

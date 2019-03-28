@@ -25,7 +25,7 @@ recording_notes can be used to record hyperparameters in the log file
 
 The format is line-separated json, with large observations stored separately in binary.
 
-The jiminy-viewer project (http://github.com/openai/jiminy-viewer) provides a browser-based UI
+The jiminy-viewer project (http://github.com/boxware/jiminy-viewer) provides a browser-based UI
 for examining logs.
 
 """

@@ -95,7 +95,7 @@ class Healthcheck(object):
         #
         # The port 10003 is an arbitrary port that we don't actually connect to, but needs to be a valid part
         # e.g Host: 127.0.0.1:GARBAGE results in the following error: (invalid port 'GARBAGE' in HTTP Host header '127.0.0.1:GARBAGE')
-        sock.send(b'GET / HTTP/1.1\r\nHost: 127.0.0.1:10003\r\nUpgrade: WebSocket\r\nConnection:Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nauthorization: ' + utils.basic_auth_encode('openai').encode('utf-8') + b'\r\nopenai-observer: true\r\n\r\n')
+        sock.send(b'GET / HTTP/1.1\r\nHost: 127.0.0.1:10003\r\nUpgrade: WebSocket\r\nConnection:Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nauthorization: ' + utils.basic_auth_encode('boxware').encode('utf-8') + b'\r\nboxware-observer: true\r\n\r\n')
         self.sockets[sock] = ('rewarder', address)
 
     def run(self):

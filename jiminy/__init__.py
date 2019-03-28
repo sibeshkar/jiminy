@@ -1,4 +1,4 @@
-# Welcome to Universe!
+# Welcome to Jiminy!
 #
 # This file contains the client-side registry of environments.
 
@@ -87,10 +87,10 @@ def configure_logging(path=None):
 
 ############### Environment registration and runtime specification ###############
 #
-#    Universe environments are registered with the gym
+#    Jiminy environments are registered with the gym
 #    environment registry when the jiminy module
 #    is imported. We use the "tags" field to store
-#    additional data specific to Universe.
+#    additional data specific to Jiminy.
 
 
 #------------------------ Gym core environments -----------------------#
@@ -1582,7 +1582,7 @@ for _site in ['Airfrance', 'Craigslist', 'Chase']:
     vnc_world_of_bits.append('wob.real.ClickButton-{}-v0'.format(_site))
 
 for _task in ['Learn', 'Test']:
-    for _name in ['Geography', 'Planet', 'Universe', 'Comet', 'Moon', 'Mars', 'Solar-System']:
+    for _name in ['Geography', 'Planet', 'Jiminy', 'Comet', 'Moon', 'Mars', 'Solar-System']:
         vnc_world_of_bits.append('wob.real.Quizlet-{}-{}-v0'.format(_name, _task))
 
 vnc_world_of_bits.append('wob.real.Duolingo-French-Basic-1-v0')
@@ -1601,7 +1601,7 @@ for game in vnc_world_of_bits:
 
 #-------------------------- Complex Games ------------------------#
 #     Any game, program, app, or website can be a
-#     Universe environment. Here we include
+#     Jiminy environment. Here we include
 #     a handful of sample "complex" games
 #     such as World of Bits, GTA V, and StarCraft.
 #     Adding more games is straightforward, and

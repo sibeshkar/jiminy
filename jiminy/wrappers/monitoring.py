@@ -6,10 +6,10 @@ from jiminy.wrappers.time_limit import TimeLimit
 
 logger = logging.getLogger(__name__)
 
-class _UniverseMonitor(core.Wrapper):
+class _JiminyMonitor(core.Wrapper):
     def __init__(self, env, directory, video_callable=None, force=False,
                  resume=False, write_upon_reset=False, uid=None, mode=None):
-        super(_UniverseMonitor, self).__init__(env)
+        super(_JiminyMonitor, self).__init__(env)
         self.directory = directory
         self.video_callable = video_callable
         self.force = force
@@ -70,7 +70,7 @@ class _UniverseMonitor(core.Wrapper):
         return observation_n
 
     def _close(self):
-        super(_UniverseMonitor, self)._close()
+        super(_JiminyMonitor, self)._close()
         self._monitor.close()
 
     def set_monitor_mode(self, mode):
@@ -79,5 +79,5 @@ class _UniverseMonitor(core.Wrapper):
 
 def Monitor(env, directory, video_callable=None, force=False, resume=False,
             write_upon_reset=False, uid=None, mode=None):
-    return _UniverseMonitor(TimeLimit(env), directory, video_callable, force, resume,
+    return _JiminyMonitor(TimeLimit(env), directory, video_callable, force, resume,
                     write_upon_reset, uid, mode)

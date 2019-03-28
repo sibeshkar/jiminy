@@ -85,7 +85,7 @@ class RewardProxyServer(websocket.WebSocketServerProtocol, object):
         Open the file and write the metadata header to describe this recording. Called after we establish an end-to-end connection
         This uses Version 1 of our protocol
 
-        Version 0 can be seen here: https://github.com/openai/jiminy/blob/f85a7779c3847fa86ec7bb513a1da0d3158dda78/bin/recording_agent.py
+        Version 0 can be seen here: https://github.com/boxware/jiminy/blob/f85a7779c3847fa86ec7bb513a1da0d3158dda78/bin/recording_agent.py
         """
         logger.info("[RewardProxyServer] [%d] Starting recording", self.id)
 
@@ -134,8 +134,8 @@ class RewardProxyServer(websocket.WebSocketServerProtocol, object):
         endpoint = endpoints.clientFromString(reactor, 'tcp:' + remote)
         client_factory = websocket.WebSocketClientFactory('ws://' + remote)
         headers = {'authorization': self._request.headers['authorization']}
-        if self._request.headers.get('openai-observer'):
-            headers['openai-observer'] = self._request.headers.get('openai-observer')
+        if self._request.headers.get('boxware-observer'):
+            headers['boxware-observer'] = self._request.headers.get('boxware-observer')
         client_factory.headers = headers
         client_factory.protocol = RewardServerClient
         client_factory.proxy_server = self

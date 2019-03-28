@@ -69,9 +69,9 @@ class DockerManager(object):
             env = remote.Remote(
                 handle=self._handles[i],
                 vnc_address='{}:{}'.format(instance.host, instance.vnc_port),
-                vnc_password='openai',
+                vnc_password='boxware',
                 rewarder_address='{}:{}'.format(instance.host, instance.rewarder_port),
-                rewarder_password='openai',
+                rewarder_password='boxware',
             )
             envs.append(env)
         return envs
@@ -80,7 +80,7 @@ class DockerManager(object):
         self.instances = [DockerInstance(self._assigner, self.runtime, label=str(i)) for i in range(self._n)]
 
         [instance.start() for instance in self.instances]
-        if int(os.environ.get('OPENAI_REMOTE_VERBOSE', '1')) > 0:
+        if int(os.environ.get('BOXWARE_REMOTE_VERBOSE', '1')) > 0:
             self.start_logging(self.instances)
         self.healthcheck(self.instances)
 
@@ -311,7 +311,7 @@ class DockerInstance(object):
                  },
                 **self.runtime.host_config),
             labels={
-                'com.openai.automanaged': 'true',
+                'com.boxware.automanaged': 'true',
             }
         )
         return container
@@ -349,7 +349,7 @@ class DockerInstance(object):
             #   device or resource busy
             # Just proceed as if it had gone away
             if 'device or resource busy' in str(e.explanation):
-                logger.info("[%s] Could not remove container: %s. You can always kill all automanaged environments on this Docker daemon via: docker rm -f $(docker ps -q -a -f 'label=com.openai.automanaged=true')", self.label, e)
+                logger.info("[%s] Could not remove container: %s. You can always kill all automanaged environments on this Docker daemon via: docker rm -f $(docker ps -q -a -f 'label=com.boxware.automanaged=true')", self.label, e)
                 self._container_id = None
                 return e
             else:
@@ -381,7 +381,7 @@ if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
     from jiminy.runtimes import registration
 
-    # docker run --name test --rm -ti -p 5900:5900 -p 15900:15900 quay.io/openai/jiminy.gym-core
+    # docker run --name test --rm -ti -p 5900:5900 -p 15900:15900 quay.io/boxware/jiminy.gym-core
     instance = DockerManager(
         runtime=registration.runtime_spec('gym-core'),
         n=2,
