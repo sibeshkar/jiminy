@@ -21,6 +21,7 @@ cd examples && python wob_clicks.py
 ```
 Wait a few moments for the remote environment to reset to the sample environment that the agent uses : `wob.mini.BisectAngle-v0`. Check `docker logs` of the remote environment container if this agent fails to connect. This agent interacts with the environment inside the remote container and returns a tuple of the form `(observation, reward, is_done, info)`with every interaction. 
 
+You can observe what the agent is doing while it runs, by connecting to the remote environment with any VNC client by pointing it towards `localhost:5900`
 
 ### Recording Demonstrations: 
 
@@ -29,3 +30,5 @@ Start the environment `wob.mini.ClickTest2-v0`in a container. This exposes a por
 ```
 docker run -itd -e TURK_DB='' -p 5899:5899 --privileged --ipc host --cap-add SYS_ADMIN sibeshkar/jiminywob demonstration -e wob.mini.ClickTest2-v0
 ```
+
+Connect to the environment by connecting any VNC client to the port `localhost:5899`. All recorded demonstrations are stored inside `/tmp/completed-demos`
