@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 setup(name='jiminy',
       version='0.21.5',
-      description="Jiminy: a software platform for measuring and training an AI's general intelligence across the world's supply of games, websites and other applications.",
+      description="Jiminy is an imitation learning library.",
       url='https://github.com/sibeshkar/jiminy',
       author='Boxware',
-      author_email='jiminy@boxware.com',
+      author_email='sibesh96@gmail.com',
       packages=[package for package in find_packages()
                 if package.startswith('jiminy')],
       install_requires=[
