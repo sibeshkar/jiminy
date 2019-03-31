@@ -33,6 +33,7 @@ class PseudoCursorEncoding(object):
     @classmethod
     def parse_rectangle(cls, client, x, y, width, height, data):
         split = width * height * client.framebuffer.bypp
+        #print("The split is: {}, Height: {}, Width: {}, bypp: {}, Data: {}".format(split, height, width, client.framebuffer.bypp, data))
         image = np.frombuffer(data[:split], np.uint8).reshape((height, width, 4))[:, :, [0, 1, 2]]
 
         # Turn raw bytes into uint8 array

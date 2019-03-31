@@ -99,7 +99,7 @@ class VNCProxyServer(protocol.Protocol, object):
         # Maybe we can do copy-rect at some point. May not help with
         # much though.
         # constants.COPY_RECTANGLE_ENCODING,
-        constants.TIGHT_ENCODING,
+        # constants.TIGHT_ENCODING, #omitted because of default encoding error on playback
         constants.RAW_ENCODING,
         constants.ZLIB_ENCODING,
         # constants.HEXTILE_ENCODING,

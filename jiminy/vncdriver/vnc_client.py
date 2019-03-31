@@ -59,6 +59,7 @@ class Framebuffer(object):
 
         shifts = [self.redshift, self.greenshift, self.blueshift]
         assert set(shifts) == set([0, 8, 16]), 'Surprising pixelformat: {}'.format(self.__dict__)
+        #assert set(shifts) == set([10, 5, 0]), 'Surprising pixelformat: {}'.format(self.__dict__)
         # How to cycle pixels from images to get RGB
         self.color_cycle = np.argsort(shifts)
         self.server_init = struct.pack('!HH16sI', self.width, self.height, self.server_pixel_format, len(self.name)) + self.name
