@@ -8,7 +8,8 @@ with open(os.path.join(os.path.dirname(__file__), '../runtimes.yml')) as f:
 
 # If you have a local repo, do something like
 # export BOXWARE_DOCKER_REPO=docker.boxware.com  (this one only for boxware folks)
-docker_repo = os.environ.get('BOXWARE_DOCKER_REPO', 'quay.io/boxware')
+# docker_repo = os.environ.get('BOXWARE_DOCKER_REPO', 'quay.io/boxware')
+docker_repo = os.environ.get('BOXWARE_DOCKER_REPO', 'sibeshkar')
 
 register_runtime(
     id='gym-core',
@@ -32,7 +33,8 @@ register_runtime(
 register_runtime(
     id='world-of-bits',
     kind='docker',
-    image=docker_repo + '/jiminy.world-of-bits:{}'.format(spec['world-of-bits']['tag']),
+    #image=docker_repo + '/jiminy.world-of-bits:{}'.format(spec['world-of-bits']['tag']),
+    image=docker_repo + '/jiminywob:{}'.format(spec['world-of-bits']['tag']),
     host_config={
         'privileged': True,
         'cap_add': ['SYS_ADMIN'],
