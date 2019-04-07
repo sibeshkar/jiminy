@@ -1,6 +1,6 @@
 # Jiminy - An imitation learning library
 
-![Jiminy recording](https://raw.githubusercontent.com/sibeshkar/jiminy/master/utils/screencast.gif)
+![Jiminy recording](utils/screencast.gif)
 
 ##### (This repository is in pre-alpha stage. Expect a lot of errors.)
 
