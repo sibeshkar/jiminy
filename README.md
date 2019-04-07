@@ -41,7 +41,7 @@ You can observe what the agent is doing while it runs, by connecting to the remo
 
   
 ### Infrastructure Overview:
-The core Jiminy infrastructure allows agents to train in parallel environments for asynchronous methods for RL (i.e A3C). The `utils` folder contains helpful bash files to handle the architecture. 
+The core Jiminy infrastructure allows agents to train in parallel environments for asynchronous methods for RL (i.e A3C). This remote docker image starts a TigerVNC server and boots a Python control server, which uses Selenium to open a Chrome browser to an in-container page which loads [MiniWoB](https://stanfordnlp.github.io/miniwob-plusplus/) environments. The `utils` folder contains helpful bash files to handle the architecture. 
 
 Follow these instructions to use:
 1. Start 8 remote environments in docker containers - `./utils/start_docker.sh` 
