@@ -33,7 +33,7 @@ def configure(env, remotes, fps=FPS):
 
 class MiniWoBCropper(vectorized.ObservationWrapper):
     """
-    Crops the WoB area and converts the observation into PyTorch (C, H, W) format. 0, 1,2 2,0,1
+    Crops the WoB area and converts the observation into PyTorch (C, H, W) format.
     """
     def __init__(self, env, keep_text=False):
         super(MiniWoBCropper, self).__init__(env)
@@ -46,7 +46,7 @@ class MiniWoBCropper(vectorized.ObservationWrapper):
                 res.append(obs)
                 continue
             img = obs['vision'][Y_OFS:Y_OFS+HEIGHT, X_OFS:X_OFS+WIDTH, :]
-            #img = np.transpose(img, (2, 0, 1))
+            img = np.transpose(img, (2, 0, 1))
             if self.keep_text:
                 text = " ".join(map(lambda d: d.get('instruction', ''), obs.get('text', [{}])))
                 res.append((img, text))
