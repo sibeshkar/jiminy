@@ -7,6 +7,13 @@
 
 Jiminy is an imitation learning library that uses VNC as an interface, and is meant to train agents on any environment(starting with World-of-Bits) tasks.
 
+Minimum requirements: 
+
+1. Python >=3.5 (preferably in virtualenv or conda)
+2. Golang >=1.10
+3. numpy  
+
+
 ### How to run sample:
 
 #### 1. Run remote environment:
