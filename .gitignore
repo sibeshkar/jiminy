@@ -17,3 +17,8 @@ build/
 /.tox
 /.cache
 utils/nohup.out
+wob/jiminy-envs/controlplane/gym_controlplane/__pycache__/
+wob/jiminy-envs/controlplane/gym_controlplane/include/__pycache__/
+wob/jiminy-envs/controlplane/gym_controlplane/integration/__pycache__/
+wob/jiminy-envs/controlplane/gym_controlplane/reward/__pycache__/
+
