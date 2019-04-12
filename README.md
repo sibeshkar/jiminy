@@ -1,6 +1,6 @@
 # Jiminy - An imitation learning library
 
-![Jiminy recording](utils/screencast2.gif)
+![Jiminy recording](utils/screencast.gif)
 
 ##### (This repository is in pre-alpha stage. Expect a lot of errors.)
 
@@ -12,6 +12,7 @@ Minimum requirements:
 1. Python >=3.5 (preferably in virtualenv or conda)
 2. Golang >=1.10
 3. numpy  
+4. [docker-compose](https://docs.docker.com/compose/install/)
 
 
 ### How to run sample:
@@ -51,19 +52,18 @@ You can observe what the agent is doing while it runs, by connecting to the remo
 The core Jiminy infrastructure allows agents to train in parallel environments for asynchronous methods for RL (i.e A3C). This remote docker image starts a TigerVNC server and boots a Python control server, which uses Selenium to open a Chrome browser to an in-container page which loads [MiniWoB](https://stanfordnlp.github.io/miniwob-plusplus/) environments. The `utils` folder contains helpful bash files to handle the architecture. 
 
 Follow these instructions to use:
-1. Start 8 remote environments in docker containers - `./utils/start_docker.sh` 
-2. [OPTIONAL] View the 8 environments, make sure [vncviewer](https://tigervnc.org/) is installed. - `./utils/vnc.sh` 
-3. After completion, clean up using `./utils/clear_docker.sh`
-
-Extras: Use `./utils/move.sh` to move vncviewers to a grid position, `./utils/kill.sh` to kill **only** the vncviewers. 
+1. Change directory to `utils`
+2. Start 8 remote environments in docker containers, and dashboard - `docker-compose --compatibility up -d` 
+2. View the environments at `localhost:80`
+3. After completion, clean up using `docker-compose down`
 
 ### Training an A3C agent from scratch:
 
 Jiminy contains an example for training agents using A3C methods from scratch.  Follow these steps to reproduce: 
 
 1. Clone and install this repository (preferably in virtualenv or conda). `pip install -e .`
-2. Start 8 remote environments : `./utils/start_docker.sh`
-3. [OPTIONAL] Open VNC viewer windows. `./utils/vnc.sh`
+2. Start 8 remote environments after changing into `utils` directory : `docker-compose --compatibility up -d`
+3. [OPTIONAL] Open VNC viewer dashboard : `localhost:80`
 4. Move into the examples directory : `cd examples`
 5. Install requirements for the agent: `pip install -r requirements.txt`
 6. Train the agent : `./wob_click_train.py -n t1 --cuda` (t1 is the name of the iteration)
@@ -71,8 +71,6 @@ Jiminy contains an example for training agents using A3C methods from scratch.  
 All runs are stored in the `./examples/runs/` directory , and best models are stored in `./examples/saves/`. You can inspect the training by starting `tensorboard --logdir=runs` in a separate terminal.
 
 On a GTX 1050Ti, the above takes one hour, i.e. 100K-150K frames to get to a mean reward of 0.9. 
-
-
 
 If you just want to see how Jiminy handles arrays of tuples of the form `(observation_n, reward_n, done_n, info)` from the parallel environments, just run ./wob	
 
