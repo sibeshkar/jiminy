@@ -12,7 +12,7 @@ Minimum requirements:
 1. Python >=3.5 (preferably in virtualenv or conda)
 2. Golang >=1.10
 3. numpy  
-4. [docker-compose](https://docs.docker.com/compose/install/)
+4. [docker-compose](https://docs.docker.com/compose/install/) (install on Linux using `./utils/install_compose.sh`)
 
 
 ### How to run sample:
@@ -43,7 +43,7 @@ cd examples && python wob_clicks.py
 
 ```
 
-Wait a few moments for the remote environment to reset to the sample environment that the agent uses : `wob.mini.BisectAngle-v0`. Check `docker logs` of the remote environment container if this agent fails to connect. This agent interacts with the environment inside the remote container and returns a tuple of the form `(observation, reward, is_done, info)`with every interaction.
+Wait a few moments for the remote environment to reset to the sample environment that the agent uses : `wob.mini.BisectAngle-v0`. Check `docker logs` of the remote environment container if this agent fails to connect. This agent interacts with the environment inside the remote container and returns a tuple of the form `(observation, reward, is_done, info)` with every interaction.
 
 You can observe what the agent is doing while it runs, by connecting to the remote environment with any VNC client by pointing it towards `localhost:5900`
 
