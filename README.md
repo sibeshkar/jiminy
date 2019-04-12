@@ -54,7 +54,7 @@ The core Jiminy infrastructure allows agents to train in parallel environments f
 Follow these instructions to use:
 1. Change directory to `utils`
 2. Start 8 remote environments in docker containers, and dashboard - `docker-compose -f docker-compose-remotes.yaml --compatibility up -d` 
-2. View the environments while training at `localhost:80` in the browser
+2. View the environments while training at `HOSTNAME:80` in the browser
 3. After completion, clean up using `docker-compose -f docker-compose-remotes.yaml down`
 
 ### Training an A3C agent from scratch:
@@ -63,7 +63,7 @@ Jiminy contains an example for training agents using A3C methods from scratch.  
 
 1. Clone and install this repository (preferably in virtualenv or conda). `pip install -e .`
 2. Start 8 remote environments after changing into `utils` directory : `docker-compose -f docker-compose-remotes.yaml --compatibility up -d`
-3. [OPTIONAL] Open VNC viewer dashboard : `localhost:80`
+3. [OPTIONAL] Open VNC viewer dashboard in browser : `HOSTNAME:80`
 4. Move into the examples directory : `cd examples`
 5. Install requirements for the agent: `pip install -r requirements.txt`
 6. Train the agent : `./wob_click_train.py -n t1 --cuda` (t1 is the name of the iteration)
@@ -81,7 +81,7 @@ Start the environment `wob.mini.ClickTest2-v0` in a container. This exposes a po
 1. Change directory to `utils`
 2. Set environment variable : `export ENV_NAME=wob.mini.ClickTest2-v0`
 3. Run `docker-compose -f docker-compose-demo.yaml --compatibility up -d`
-4. To record demonstrations, visit the noVNC client at `localhost:6080` and connect using password : `boxware`
+4. To record demonstrations, visit the noVNC client at `HOSTNAME:6080` and connect using password : `boxware`
 5. After recording demonstrations, disconnect noVNC using the panel or close the tab.
 
 All recorded demonstrations are stored inside `/tmp/completed-demos` inside the container, and will be automatically transferred to the `examples/completed-demos` directory on your machine. 
