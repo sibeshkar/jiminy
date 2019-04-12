@@ -1,5 +1,5 @@
 version: '3.3'
-##Start with docker-compose --compatibility up -d
+##Start with docker-compose -f docker-compose-play.yml --compatibility up -d
 services:
    vnc-remote:
      image: sibeshkar/jiminywob:latest

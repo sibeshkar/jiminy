@@ -1,0 +1,23 @@
+version: '3.3'
+##Start with docker-compose -f docker-compose-demo.yml --compatibility up -d
+services:
+   vnc-demo:
+     image: sibeshkar/jiminywob:latest
+     privileged: true
+     cap_add: ["SYS_ADMIN"]
+     ipc: host
+     environment: 
+       - "ENV_NAME=${ENV_NAME}"
+     command: ["demonstration", "-e", "${ENV_NAME}"]
+     volumes: 
+       - ../examples/completed-demos:/tmp/completed-demos
+     ports:
+       - "5899:5899"
+   novnc:
+     image: gotget/novnc
+     depends_on: 
+       - vnc-demo
+     network_mode: "host"
+     command: ["--vnc", "localhost:5899"]
+
+# docker run -itd -e TURK_DB='' -p 5899:5899 --privileged --ipc host --cap-add SYS_ADMIN sibeshkar/jiminywob demonstration -e wob.mini.ClickTest2-v0
