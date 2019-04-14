@@ -32,7 +32,6 @@ You can view the environment at `HOSTNAME:90` in your browser.
 ```
 git clone https://github.com/sibeshkar/jiminy
 pip install -e .
-
 ```
 
 #### 3.Install requirements for running agents, and run sample random agent:
@@ -40,11 +39,9 @@ pip install -e .
 Above command should open a terminal to the container. Inside the container, run the sample agent like this:
 
 ```
-
 cd examples
 pip install -r requirements.txt
 ./wob_remotes_new.py
-
 ```
 
 Wait a few moments for the remote environment to reset to the sample environment that the agent uses : `wob.mini.BisectAngle-v0`. Check `docker logs` of the remote environment container if this agent fails to connect. This agent interacts with the environment inside the remote container and returns a tuple of the form `(observation, reward, is_done, info)` with every interaction.
