@@ -21,31 +21,33 @@ Minimum requirements:
 
 ```
 
-docker run -itd -p 5900:5900 -p 15900:15900 --ipc host --privileged --cap-add SYS_ADMIN sibeshkar/jiminywob
+docker run -it -p 5900:5900 -p 15900:15900 -p 90:6080 --ipc host --privileged --cap-add SYS_ADMIN sibeshkar/jiminywob:latest
 
 ```
 
-#### 2. Run Jiminy in docker container :
+You can view the environment at `HOSTNAME:90` in your browser. 
+
+#### 2. Install Jiminy in virtualenv/conda :
+
+```
+git clone https://github.com/sibeshkar/jiminy
+pip install -e .
 
 ```
 
-docker run -it --net host sibeshkar/jiminy
-
-```
-
-#### 3.Run sample random agent:
+#### 3.Install requirements for running agents, and run sample random agent:
 
 Above command should open a terminal to the container. Inside the container, run the sample agent like this:
 
 ```
 
-cd examples && python wob_clicks.py
+cd examples
+pip install -r requirements.txt
+./wob_remotes_new.py
 
 ```
 
 Wait a few moments for the remote environment to reset to the sample environment that the agent uses : `wob.mini.BisectAngle-v0`. Check `docker logs` of the remote environment container if this agent fails to connect. This agent interacts with the environment inside the remote container and returns a tuple of the form `(observation, reward, is_done, info)` with every interaction.
-
-You can observe what the agent is doing while it runs, by connecting to the remote environment with any VNC client by pointing it towards `localhost:5900`
 
   
 ### Infrastructure Overview:

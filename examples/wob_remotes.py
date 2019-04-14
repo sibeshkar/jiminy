@@ -8,7 +8,7 @@ from lib import wob_vnc
 
 from PIL import Image
 
-REMOTES_COUNT = 8
+REMOTES_COUNT = 1
 
 import gym
 import jiminy # register the universe environments
