@@ -20,9 +20,7 @@ Minimum requirements:
 #### 1. Run remote environment:
 
 ```
-
 docker run -it -p 5900:5900 -p 15900:15900 -p 90:6080 --ipc host --privileged --cap-add SYS_ADMIN sibeshkar/jiminywob:latest
-
 ```
 
 You can view the environment at `HOSTNAME:90` in your browser. 
