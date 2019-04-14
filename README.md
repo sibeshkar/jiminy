@@ -37,8 +37,6 @@ pip install -e .
 
 #### 3.Install requirements for running agents, and run sample random agent:
 
-Above command should open a terminal to the container. Inside the container, run the sample agent like this:
-
 ```
 cd examples
 pip install -r requirements.txt
