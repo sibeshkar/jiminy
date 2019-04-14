@@ -31,6 +31,7 @@ You can view the environment at `HOSTNAME:90` in your browser.
 
 ```
 git clone https://github.com/sibeshkar/jiminy
+cd jiminy
 pip install -e .
 ```
 
