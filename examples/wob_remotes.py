@@ -11,7 +11,7 @@ from PIL import Image
 REMOTES_COUNT = 1
 
 import gym
-import jiminy # register the universe environments
+import jiminy # register the environments
 
 from jiminy import wrappers
 

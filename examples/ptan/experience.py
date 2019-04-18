@@ -28,7 +28,7 @@ class ExperienceSource:
         :param agent: callable to convert batch of states into actions to take
         :param steps_count: count of steps to track for every experience chain
         :param steps_delta: how many steps to do between experience items
-        :param vectorized: support of vectorized envs from OpenAI universe
+        :param vectorized: support of vectorized envs
         """
         assert isinstance(env, (gym.Env, list, tuple))
         assert isinstance(agent, BaseAgent)
@@ -52,7 +52,7 @@ class ExperienceSource:
         for env in self.pool:
             obs = env.reset()
             # if the environment is vectorized, all it's output is lists of results.
-            # Details are here: https://github.com/openai/universe/blob/master/doc/env_semantics.rst
+           
             if self.vectorized:
                 obs_len = len(obs)
                 states.extend(obs)
