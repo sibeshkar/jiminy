@@ -82,7 +82,7 @@ Start the environment `wob.mini.ClickTest2-v0` in a container. This exposes a po
 
 All recorded demonstrations are stored inside `/tmp/completed-demos` inside the container, and will be automatically transferred to the `examples/completed-demos` directory on your machine. 
 
-### Recording Demonstrations:
+### Training From Demonstrations:
 
 This example lets you play a few games of TicTacToe, and have an A3C agent imitate (and then optimize) from your demonstrations. 
 
@@ -92,7 +92,3 @@ This example lets you play a few games of TicTacToe, and have an A3C agent imita
 ```
 ./wob_click_train.py -n t1 --env wob.mini.TicTacToe --demo completed-demos/ --host localhost --cuda
 ```
-
-#### Coming soon:
-1. How to record and play demonstrations
-2. Using demonstrations during training
