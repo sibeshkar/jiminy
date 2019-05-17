@@ -1,4 +1,4 @@
-from gym.spaces import prng
+from jiminy.gym.spaces import prng
 
 class Hardcoded(object):
     def __init__(self, actions):

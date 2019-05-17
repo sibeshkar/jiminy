@@ -9,7 +9,7 @@ import threading
 # import psutil
 import sys
 from collections import namedtuple
-from gym.utils import reraise
+from jiminy.gym.utils import reraise
 
 import re
 from jiminy import error, pyprofile, spaces

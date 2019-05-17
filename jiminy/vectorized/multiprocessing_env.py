@@ -3,8 +3,8 @@ import multiprocessing
 import numpy as np
 import traceback
 
-import gym
-from gym import spaces
+from jiminy.gym import spec
+from jiminy.gym import spaces
 from jiminy.vectorized import core
 
 logger = logging.getLogger(__name__)
@@ -268,7 +268,7 @@ class MultiprocessingEnv(core.Env):
         self.worker_n = None
 
         # Pull the relevant info from a transient env instance
-        self.spec = gym.spec(env_id)
+        self.spec = spec(env_id)
         env = self.spec.make()
 
         current_metadata = self.metadata

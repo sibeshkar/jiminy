@@ -49,9 +49,9 @@ The core Jiminy infrastructure allows agents to train in parallel environments f
 
 Follow these instructions to use:
 1. Change directory to `utils`
-2. Start 8 remote environments in docker containers, and dashboard - `docker-compose -f docker-compose-remotes.yaml --compatibility up -d` 
+2. Start 8 remote environments in docker containers, and dashboard - `docker-compose -f docker-compose-remotes.yml --compatibility up -d` 
 2. View the environments while training at `HOSTNAME:80` in the browser
-3. After completion, clean up using `docker-compose -f docker-compose-remotes.yaml down`
+3. After completion, clean up using `docker-compose -f docker-compose-remotes.yml down`
 
 ### Training an A3C agent from scratch:
 

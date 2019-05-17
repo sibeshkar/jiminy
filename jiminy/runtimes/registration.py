@@ -2,7 +2,7 @@ import collections
 import json
 
 import six
-from gym import error
+from jiminy.gym import error
 
 
 class UnregisteredRuntime(error.Unregistered):

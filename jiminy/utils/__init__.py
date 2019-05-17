@@ -105,7 +105,7 @@ def blockingCallFromThread(f, *a, **kw):
         raise e
     return result
 
-from gym import spaces
+from jiminy.gym import spaces
 def repeat_space(space, n):
     return spaces.Tuple([space] * n)
 

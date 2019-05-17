@@ -1,8 +1,8 @@
 import glob
 import os
 
-import gym.monitoring
-from gym.monitoring.tests import helpers
+import jiminy.gym.monitoring
+from jiminy.gym.monitoring.tests import helpers
 from jiminy import wrappers
 
 def test_multiprocessing_env_monitoring():

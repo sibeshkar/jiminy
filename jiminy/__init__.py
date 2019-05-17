@@ -15,11 +15,11 @@ warnings.filterwarnings(
 )
 
 
-from gym.envs.registration import register
+from jiminy.gym.envs.registration import register
 
 import jiminy.scoreboard
 import jiminy.configuration
-from jiminy import error, envs
+from jiminy import error, envs, gym
 from jiminy.remotes import docker_remote
 from jiminy.rewarder import merge_infos
 from jiminy.runtimes.registration import runtime_spec

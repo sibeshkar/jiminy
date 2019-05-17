@@ -1,7 +1,7 @@
 import logging
 import time
 
-import gym
+from jiminy.gym import spec
 from jiminy import spaces
 from jiminy.envs import vnc_env
 
@@ -37,7 +37,7 @@ class GymCoreSyncEnv(GymCoreEnv):
         self.vnc_pixels = vnc_pixels
 
         if not vnc_pixels:
-            self._core_env = gym.spec(gym_core_id).make()
+            self._core_env = spec(gym_core_id).make()
         else:
             self._core_env = None
 

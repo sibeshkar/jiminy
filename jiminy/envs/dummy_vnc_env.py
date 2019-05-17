@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 
-from gym.utils import reraise
+from jiminy.gym.utils import reraise
 
 from jiminy import error, rewarder, spaces, utils, vectorized
 from jiminy.envs import diagnostics

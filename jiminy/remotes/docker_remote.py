@@ -11,7 +11,7 @@ import time, random
 
 import docker
 import six.moves.urllib.parse as urlparse
-from gym.utils import closer
+from jiminy.gym.utils import closer
 from jiminy import error
 from jiminy.remotes import healthcheck, remote
 from jiminy import error, utils

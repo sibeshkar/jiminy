@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os
-import gym
+import jiminy.gym as gym
 import random
 import jiminy
 import argparse

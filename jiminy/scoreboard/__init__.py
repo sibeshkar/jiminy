@@ -1,5 +1,5 @@
-from gym.benchmarks import scoring
-from gym.benchmarks import register_benchmark
+from jiminy.gym.benchmarks import scoring
+from jiminy.gym.benchmarks import register_benchmark
 
 register_benchmark(
     id='Atari7VNC-v0',

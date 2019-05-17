@@ -1,4 +1,4 @@
-import gym
+import jiminy.gym as gym
 import logging
 from jiminy import rewarder, spaces, vectorized
 

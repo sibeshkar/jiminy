@@ -2,8 +2,8 @@
 import sys
 sys.path.append("..")
 import time
-import gym
 import jiminy
+import jiminy.gym as gym
 
 from PIL import Image
 
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     env = wob_vnc.MiniWoBCropper(env)
 
     #env.configure(remotes='vnc://gpu:5900+15900')
-    env.configure(remotes='vnc://localhost:5900+15900')
+    env.configure(remotes='vnc://0.0.0.0:5900+15900')
     obs = env.reset()
 
     while True:
@@ -42,8 +42,8 @@ if __name__ == "__main__":
         print("Info", info)
 
 
-        im = Image.fromarray(obs[0])
-        im.save("test_frames/frame-%03d.png" % idx)
+        #im = Image.fromarray(obs[0])
+        #im.save("test_frames/frame-%03d.png" % idx)
 
     env.close()
     pass

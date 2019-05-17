@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import argparse
-import gym
+import jiminy.gym as gym
 import jiminy
 import logging
 import numpy as np

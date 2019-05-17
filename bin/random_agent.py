@@ -9,7 +9,7 @@ import threading
 import time
 import traceback
 
-import gym
+import jiminy.gym as gym
 import jiminy
 from jiminy import pyprofile, wrappers, spaces
 

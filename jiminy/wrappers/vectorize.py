@@ -1,4 +1,4 @@
-import gym
+import jiminy.gym as gym
 import weakref
 
 from jiminy import error

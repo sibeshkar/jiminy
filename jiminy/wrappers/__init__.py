@@ -1,4 +1,4 @@
-import gym
+import jiminy.gym as gym
 import jiminy.wrappers.experimental
 from jiminy import envs, spaces
 from jiminy.wrappers import gym_core_sync

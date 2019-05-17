@@ -1,11 +1,11 @@
-import gym
-from gym.spaces import Box
+from jiminy.gym import Space
+from jiminy.gym.spaces import Box
 from jiminy.spaces import joystick_event
-from gym.spaces import prng
+from jiminy.gym.spaces import prng
 from collections import OrderedDict
 
 
-class JoystickActionSpace(gym.Space):
+class JoystickActionSpace(Space):
     """
     Programmable joystick - currently Windows-only => mapped to vJoy
     """

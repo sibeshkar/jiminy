@@ -7,7 +7,7 @@
 
 
 # from jiminy.envs import vnc_env
-import gym
+import jiminy.gym as gym
 import numpy as np
 import os
 import jiminy

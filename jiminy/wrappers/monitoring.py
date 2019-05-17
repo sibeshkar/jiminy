@@ -1,6 +1,6 @@
 import logging
 
-import gym
+import jiminy.gym as gym
 from jiminy.vectorized import core  # Cannot import vectorized directly without inducing a cycle
 from jiminy.wrappers.time_limit import TimeLimit
 
@@ -45,7 +45,7 @@ class _JiminyMonitor(core.Wrapper):
             )
         else:
             logger.warn("DEPRECATION WARNING: You are using an older version of gym that has a deprecated Monitor, please update to gym:v0.8.0. This change was made 2017/02/01 and is included in jiminy version 0.21.3")
-            from gym import monitoring
+            from jiminy.gym import monitoring
             self._monitor = monitoring.MonitorManager(self._unvectorized_envs[0])
             self._monitor.start(
                 self.directory,

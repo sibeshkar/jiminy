@@ -2,8 +2,8 @@
 # Mostly copy-pasted from https://github.com/openai/baselines/blob/master/baselines/common/atari_wrappers.py
 import numpy as np
 from collections import deque
-import gym
-from gym import spaces
+import jiminy.gym as gym
+from jiminy.gym import spaces
 import cv2
 
 

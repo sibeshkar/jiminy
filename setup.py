@@ -15,7 +15,6 @@ setup(name='jiminy',
           'docker-pycreds==0.2.1',
           'fastzbarlight>=0.0.13',
           'go-vncdriver>=0.4.8',
-          'gym==0.9.0',
           'Pillow>=3.3.0',
           'PyYAML>=5.1',
           'six>=1.10.0',
@@ -23,8 +22,5 @@ setup(name='jiminy',
           'ujson>=1.35',
       ],
       package_data={'jiminy': ['runtimes.yml', 'runtimes/flashgames.json']},
-      tests_require=['pytest'],
-      extras_require={
-          'atari': 'gym[atari]',
-      }
+      tests_require=['pytest']
       )

@@ -1,6 +1,6 @@
 import logging
 
-import gym
+import jiminy.gym as gym
 import numpy as np
 from jiminy import spaces
 from jiminy import vectorized

@@ -1,9 +1,9 @@
 import logging
-import gym
+import jiminy.gym as gym
 import time
 import numpy as np
 from jiminy import error
-from gym import spaces as gym_spaces
+from jiminy.gym import spaces as gym_spaces
 from jiminy import spaces
 from jiminy import rewarder, vectorized
 from jiminy.envs.vnc_core_env import translator

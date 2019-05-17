@@ -1,5 +1,5 @@
 import logging
-from gym import configuration
+from jiminy.gym import configuration
 
 jiminy_logger = logging.getLogger('jiminy')
 jiminy_logger.setLevel(logging.INFO)

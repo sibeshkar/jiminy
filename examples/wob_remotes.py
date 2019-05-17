@@ -8,9 +8,9 @@ from lib import wob_vnc
 
 from PIL import Image
 
-REMOTES_COUNT = 1
+REMOTES_COUNT = 8
 
-import gym
+import jiminy.gym as gym
 import jiminy # register the environments
 
 from jiminy import wrappers
@@ -31,7 +31,7 @@ def main():
     env = gym.make('wob.mini.ClickDialog-v0')
     env = jiminy.wrappers.experimental.SoftmaxClickMouse(env)
     env = wob_vnc.MiniWoBCropper(env)
-    wob_vnc.configure(env, wob_vnc.remotes_url(port_ofs=0, hostname='localhost', count=REMOTES_COUNT))  # automatically creates a local docker container
+    wob_vnc.configure(env, wob_vnc.remotes_url(port_ofs=0, hostname='0.0.0.0', count=REMOTES_COUNT))  # automatically creates a local docker container
     
     observation_n = env.reset()
     idx = 0

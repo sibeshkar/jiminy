@@ -5,7 +5,7 @@ import random
 import uuid
 
 import jiminy
-from gym.utils import reraise
+from jiminy.gym.utils import reraise
 from jiminy import error, pyprofile, rewarder, spaces, twisty, vectorized, vncdriver
 from jiminy import remotes as remotes_module
 from jiminy.envs import diagnostics

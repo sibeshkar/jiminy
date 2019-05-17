@@ -1,7 +1,7 @@
-import gym
+import jiminy.gym as gym
 import time
 import jiminy
-from gym.envs import register
+from jiminy.gym.envs import register
 from jiminy import wrappers
 
 register(

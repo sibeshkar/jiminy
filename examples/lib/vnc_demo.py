@@ -4,7 +4,7 @@ import json
 import struct
 import os.path
 import collections
-import gym
+import jiminy.gym as gym
 import jiminy
 
 import numpy as np

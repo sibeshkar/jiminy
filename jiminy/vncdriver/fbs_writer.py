@@ -2,7 +2,7 @@ import json
 import struct
 import time
 
-from gym.utils import atomic_write, closer
+from jiminy.gym.utils import atomic_write, closer
 
 fbs_closer = closer.Closer()
 

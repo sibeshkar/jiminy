@@ -8,9 +8,8 @@ import six.moves.urllib.parse as urlparse
 import threading
 import time
 
-import gym
-from gym import scoreboard
-from gym.utils import reraise
+from jiminy.gym import scoreboard
+from jiminy.gym.utils import reraise
 
 from jiminy import error, utils
 from jiminy.remotes import remote

@@ -1,4 +1,4 @@
-import gym
+import jiminy.gym as gym
 import torch
 import random
 import collections

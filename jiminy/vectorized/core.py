@@ -1,8 +1,8 @@
-import gym
-from gym import spaces
+from jiminy.gym import Env, Wrapper, ObservationWrapper, RewardWrapper, ActionWrapper
+from jiminy.gym import spaces
 from jiminy import error
 
-class Env(gym.Env):
+class Env(Env):
     """Base class capable of handling vectorized environments.
     """
     metadata = {
@@ -16,7 +16,7 @@ class Env(gym.Env):
     n = None
 
 
-class Wrapper(Env, gym.Wrapper):
+class Wrapper(Env, Wrapper):
     """Use this instead of gym.Wrapper iff you're wrapping a vectorized env,
     (or a vanilla env you wish to be vectorized).
     """
@@ -43,11 +43,11 @@ class Wrapper(Env, gym.Wrapper):
     def configure(self, **kwargs):
         self.env.configure(**kwargs)
 
-class ObservationWrapper(Wrapper, gym.ObservationWrapper):
+class ObservationWrapper(Wrapper, ObservationWrapper):
     pass
 
-class RewardWrapper(Wrapper, gym.RewardWrapper):
+class RewardWrapper(Wrapper, RewardWrapper):
     pass
 
-class ActionWrapper(Wrapper, gym.ActionWrapper):
+class ActionWrapper(Wrapper, ActionWrapper):
     pass

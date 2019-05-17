@@ -1,12 +1,13 @@
-import gym
+
 import string
 
-from gym.spaces import prng
+from jiminy.gym import Space
+from jiminy.gym.spaces import prng
 
 from jiminy.vncdriver import constants
 from jiminy.spaces import vnc_event
 
-class VNCActionSpace(gym.Space):
+class VNCActionSpace(Space):
     """The space of VNC actions.
 
     You can submit a list of KeyEvents or PointerEvents. KeyEvents

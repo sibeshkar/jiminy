@@ -6,7 +6,7 @@ import numpy as np
 import os
 import time
 
-import gym
+import jiminy.gym as gym
 
 from jiminy import error, kube, vnc
 

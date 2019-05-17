@@ -5,7 +5,7 @@ import socket
 import time
 
 from jiminy import error, utils
-from gym.utils import reraise
+from jiminy.gym.utils import reraise
 
 logger = logging.getLogger(__name__)
 
