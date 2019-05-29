@@ -18,3 +18,4 @@ build/
 /.cache
 utils/nohup.out
 examples/completed-demos
+*.log
