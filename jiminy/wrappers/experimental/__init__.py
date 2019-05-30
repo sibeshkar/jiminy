@@ -2,3 +2,4 @@ from jiminy.wrappers.experimental.action_space import SafeActionSpace, SoftmaxCl
 from jiminy.wrappers.experimental.observation import CropObservations
 from jiminy.wrappers.experimental.random_env import RandomEnv
 from jiminy.wrappers.experimental.jiminy_action_wrapper import JiminyActionWrapper
+from jiminy.wrappers.experimental.representation_wrapper import RepresentationWrapper

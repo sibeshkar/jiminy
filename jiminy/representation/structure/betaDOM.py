@@ -1,7 +1,8 @@
 from jiminy.vectorized.core import Env
+from jiminy.wrappers.experimental import RepresentationWrapper
 import os
 
-class betaDOM(object):
+class betaDOM(RepresentationWrapper):
     """
     This object maintains the repesentation of the pixels
     seen by the environment
@@ -28,3 +29,6 @@ def betaDOMFromSeleniumWebDriver(seleniumWebDriver):
         raise ValueError("fname for a screenshot can not be null")
     betadom.pixels = getPixelsFromFile(fname)
 
+if __name__ == "__main__":
+    betadom = betaDOM(env=Env())
+    betadom._step(None)
