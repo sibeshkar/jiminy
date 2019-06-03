@@ -1,5 +1,5 @@
 from jiminy import spaces
-from jiminy.envs.vnc_core_env import key
+from jiminy.translator.atari import key
 import logging
 
 logger = logging.getLogger(__name__)

@@ -6,7 +6,7 @@ from jiminy import error
 from jiminy.gym import spaces as gym_spaces
 from jiminy import spaces
 from jiminy import rewarder, vectorized
-from jiminy.envs.vnc_core_env import translator
+from jiminy.translator import atari as translator
 
 logger = logging.getLogger(__name__)
 

@@ -1,4 +1,4 @@
-from jiminy import utils
+from jiminy.representation.structure import utils
 import json
 
 class JiminyBaseObject(object):
@@ -42,3 +42,6 @@ class JiminyBaseObject(object):
     def getMetadata(self):
         import json
         return json.dumps(self.metadata)
+
+    def getActionList(self):
+        return utils.flatten([action.action_space for self.softmaxActionableState.values()])

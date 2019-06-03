@@ -47,11 +47,18 @@ class JiminyActionWrapper(vectorized.Wrapper, Wrapper):
             raise ValueError
         self._control_algorithm()
 
-    def step(self, targetParams=None):
+    def step(self):
+        if self.targetParams is None:
+            self.targetParams = self._get_default_params()
+        return self._control_algorithm(self.targetParams)
+
+    def setTarget(self, targetParams=None):
         if targetParams is None:
             targetParams = self._get_default_params()
+        self.targetParams = targetParams
         self._check(targetParams)
-        self._control_algorithm(targetParams)
+        # return object for chaining
+        return self
 
     def _check_params(self, targetParams):
         """

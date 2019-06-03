@@ -15,6 +15,3 @@ class RepresentationWrapper(ActionWrapper, ObservationWrapper):
         action = self.action(action)
         observation, reward, done, info = self.env.step(action)
         return self.observation(observation),reward, done, info
-
-    def load_state(self):
-        raise NotImplementedError

@@ -1,2 +1,2 @@
-from JiminyBaseObject import JiminyBaseObject
-from betaDOM import betaDOM
+from jiminy.representation.structure.base_object import JiminyBaseObject
+from jiminy.representation.structure.beta_dom import betaDOM,betaDOMFromSeleniumWebDriver

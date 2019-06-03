@@ -3,7 +3,8 @@ import utils
 import argparse
 import os
 from webloader import WebLoader
-from jiminy import JiminyBaseObject
+from jiminy.representation.structure import JiminyBaseObject,betaDOMFromSeleniumWebDriver
+from jiminy.vectorized.core import Env
 
 
 parser = argparse.ArgumentParser("Jiminy web loader module")
@@ -22,8 +23,9 @@ if __name__ == "__main__":
     webLoader = WebLoader.WebLoader("Firefox")
     for url in urlList:
         webLoader.loadPage(url)
+        betadom = betaDOMFromSeleniumWebDriver(webLoader.driver)
         objectList = webLoader.getRawObjectList()
-        objectList = [JiminyBaseObject.JiminyBaseObject(seleniumObject=seleniumObj) for seleniumObj in objectList]
+        objectList = [JiminyBaseObject(betaDom=betadom, seleniumObject=seleniumObj) for seleniumObj in objectList]
         for jimObj in objectList:
             print(jimObj.toString())
     webLoader.driver.close()
