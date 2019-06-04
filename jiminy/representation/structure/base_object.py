@@ -2,11 +2,10 @@ from jiminy.representation.structure import utils
 import json
 
 class JiminyBaseObject(object):
-    def __init__(self, betaDom, seleniumObject=None, boundingBox=None, objectType=None, actionList=None):
+    def __init__(self, betaDom, seleniumObject=None, boundingBox=None, objectType=None):
         if seleniumObject != None:
             self.boundingBox = utils.getBoundingBoxCoords(seleniumObject)
             self.objectType = utils.getObjectType(seleniumObject)
-            self.actionList = utils.getActionList(seleniumObject)
         else:
             if boundingBox == None:
                 raise ValueError("Bounding box can not be None")
@@ -16,7 +15,6 @@ class JiminyBaseObject(object):
                 raise ValueError("ActionList can not be null")
             self.boundingBox = boundingBox
             self.objectType = objectType
-            self.actionList = actionList
         self.objectPixels = utils.getPixelsForBoundingBox(betaDom, self.boundingBox)
         n_inv = 1. / len(betaDom.getActionableStateList())
         # initialize that all actionable states to be equally likely
@@ -30,7 +28,6 @@ class JiminyBaseObject(object):
         jiminyDict = dict()
         jiminyDict['boundingBox'] = self.boundingBox
         jiminyDict['objectType'] = self.objectType
-        jiminyDict['actionList'] = self.actionList
         result = json.dumps(jiminyDict)
         return result
 
@@ -42,6 +39,3 @@ class JiminyBaseObject(object):
     def getMetadata(self):
         import json
         return json.dumps(self.metadata)
-
-    def getActionList(self):
-        return utils.flatten([action.action_space for self.softmaxActionableState.values()])

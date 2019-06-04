@@ -1,6 +1,6 @@
 from jiminy.vectorized import ActionWrapper, ObservationWrapper
 
-class RepresentationWrapper(ActionWrapper, ObservationWrapper):
+class RepresentationWrapper(ObservationWrapper):
     """
     RepresentationWrapper extends both ActionWrapper and ObservationWrapper
     Since we can get both observations from RW

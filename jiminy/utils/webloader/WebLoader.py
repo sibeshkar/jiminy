@@ -1,5 +1,5 @@
 from selenium import webdriver
-from webloader import utils
+from jiminy.utils.webloader import utils
 
 class WebLoader:
     def __init__(self, browser='Firefox'):
@@ -7,6 +7,7 @@ class WebLoader:
             self.driver = webdriver.Firefox()
         else:
             raise ValueError("Unknown broswer configuration: {}".format(browser))
+        self.active_object = None
 
     def loadPage(self, url):
         self.driver.get(url)
