@@ -1,1 +1,1 @@
-from jiminy.utils.webloader import WebLoader
+from jiminy.utils.webloader.web_loader import WebLoader

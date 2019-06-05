@@ -4,7 +4,21 @@ import datetime
 import numpy as np
 from jiminy.gym import Space
 
-def getBoundingBoxCoords(objectInContext):
+def getLabelForInput(inputObject, webdriver):
+    name = inputObject.get_attribute("name")
+    labelObject = webdriver.find_element_by_xpath("//label[@for=({})]".format(name))
+    return labelObject
+
+def getInnerText(inputObject, webdriver):
+    if inputObject.tag_name == "p":
+        return inputObject.text
+    elif inputObject.tag_name == "input" and inputObject.get_attribute('type') in ["radio", "checkbox"]:
+        labelObject = getLabelForInput(inputObject, webdriver)
+        return labelObject.text
+    else:
+        return ""
+
+def getBoundingBoxCoords(objectInContext, webdriver):
     """
     :param objectInContext: the object for which we compute the bounding box
     """
@@ -13,6 +27,17 @@ def getBoundingBoxCoords(objectInContext):
     location['y_1'] = objectInContext.location['y']
     location['x_2'] = objectInContext.location['x'] + objectInContext.size['width']
     location['y_2'] = objectInContext.location['y'] + objectInContext.size['height']
+    if objectInContext.tag_name == "input" and objectInContext.get_attribute("type") in ["checkbox", "radio"]:
+        objectLabel = getLabelForInput(objectInContext)
+        labelLocation = getBoundingBoxCoords(objectLabel, webdriver)
+        location = combineLocations(location, labelLocation)
+    return location
+
+def combineLocations(location, labelLocation):
+    location["x_1"] = min(location["x_1"], labelLocation["x_1"])
+    location["y_1"] = min(location["y_1"], labelLocation["y_1"])
+    location["x_2"] = max(location["x_2"], labelLocation["x_2"])
+    location["y_2"] = max(location["y_2"], labelLocation["y_2"])
     return location
 
 def saveScreenToFile(seleniumWebDriver):
@@ -47,10 +72,7 @@ def getObjectType(seleniumObject):
     """
     Returns the type of object in jiminy
     """
-    objectTypeList = []
-    if checkInputType(seleniumObject):
-        objectTypeList.append('input')
-        if checkTextInputType(seleniumObject):
-            objectTypeList.append('text-input')
-        else:
-            objectTypeList.append('form-input')
+    if seleniumObject.tag_name == "input":
+        return "input"
+    if seleniumObject.tag_name == "p":
+        return "text"
