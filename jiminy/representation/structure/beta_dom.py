@@ -9,9 +9,11 @@ class betaDOMInstance(vectorized.ObservationWrapper):
     def __init__(self):
         self.objectList = list()
         self.pixels = None
+        self.flist = []
     def _observation(self, obs):
         if isinstance(obs, WebLoader):
             fname = utils.saveScreenToFile(obs.driver)
+            self.fname.append(fname)
             if fname is None or fname == "":
                 raise ValueError("fname for screenshot can not be null")
             self.pixels = utils.getPixelsFromFile(fname)
@@ -34,13 +36,16 @@ class betaDOM(vectorized.ObservationWrapper):
         assert (not env is None), "Env passed to ClickableSpace can not be {}".format(env)
         assert isinstance(env, Env), "Env passed to ClickableSpace can not be {}, expected: jiminy.vectorized.Env".format(env)
         self.env = env
-        # self.n = env.n
         self.betadom_instance_list = [betaDOMInstance() for _ in range(self.n)]
 
     def _observation(self, obs):
         assert (isinstance(obs, list) and len(obs) == self.n), "Expected observation to be list of size {}".format(self.n, obs)
         for i, ob in enumerate(obs):
             self.betadom_instance_list[i].observation(ob)
+
+    def _reset(self):
+        self.env.reset()
+        self.
 
 if __name__ == "__main__":
     betadom = betaDOM(env=Env())

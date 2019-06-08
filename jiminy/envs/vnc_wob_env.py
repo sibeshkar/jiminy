@@ -4,9 +4,17 @@ from jiminy.spaces import vnc_event
 from selenium.webdriver.common.keys import Keys
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support.events import EventFiringWebDriver, AbstractEventListener
 from jiminy import spaces
 from jiminy.representation.structure import betaDOM
 import numpy as np
+
+class FirefoxListener(AbstractEventListener):
+    def before_click(self, element, driver):
+        pass
+
+    def after_click(self, element, driver):
+        pass
 
 
 class SeleniumWoBEnv(DummyVNCEnv):
@@ -18,6 +26,13 @@ class SeleniumWoBEnv(DummyVNCEnv):
         self.observation_space = spaces.VNCObservationSpace()
         self.action_space = spaces.VNCActionSpace()
         self.buttonmask = 0
+
+    def start_listener(self):
+        """
+        TODO(prannayk): complete this
+        """
+        assert (not self.web_driver_list is None), "Call configure on the environment before calling start_listener"
+        raise NotImplementedError
 
     def configure(self, remotes=None,
                    client_id=None,
@@ -35,6 +50,7 @@ class SeleniumWoBEnv(DummyVNCEnv):
         for i in range(self.n):
             self.web_driver_list[i].loadPage(self.remotes[i])
         self.started = True
+        self.reset()
 
     def _reset(self):
         for i in range(self.n):

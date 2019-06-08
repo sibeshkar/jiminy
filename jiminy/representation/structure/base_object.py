@@ -30,6 +30,10 @@ class JiminyBaseObject(object):
         jiminyDict = dict()
         jiminyDict['boundingBox'] = self.boundingBox
         jiminyDict['objectType'] = self.objectType
+        jiminyDict['focused'] = self.focused
+        jiminyDict['value'] = self.value
+        jiminyDict['innerText'] = self.innerText
+        jiminyDict['metadata'] = self.getMetadata()
         result = json.dumps(jiminyDict)
         return result
 
