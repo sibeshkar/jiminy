@@ -10,7 +10,7 @@ def getLabelForInput(inputObject, webdriver):
     return labelObject
 
 def getInnerText(inputObject, webdriver):
-    if inputObject.tag_name == "p":
+    if inputObject.tag_name == "p" or inputObject.tag_name == "button" or inputObject.tag_name == "div":
         return inputObject.text
     elif inputObject.tag_name == "input" and inputObject.get_attribute('type') in ["radio", "checkbox"]:
         labelObject = getLabelForInput(inputObject, webdriver)
@@ -72,7 +72,9 @@ def getObjectType(seleniumObject):
     """
     Returns the type of object in jiminy
     """
+    if seleniumObject.tag_name == "button" or (seleniumObject.tag_name == "input" and seleniumObject.get_attribute("type") == "submit") or seleniumObject.tag_name == "a":
+        return "click"
     if seleniumObject.tag_name == "input":
         return "input"
-    if seleniumObject.tag_name == "p":
+    if seleniumObject.tag_name == "p" or seleniumObject.tag_name == "div":
         return "text"

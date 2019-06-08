@@ -19,5 +19,7 @@ class WebLoader:
         """
         objectList = []
         objectList += utils.getInputFields(self.driver)
+        objectList += utils.getButtonFields(self.driver)
+        objectList += utils.getTextFields(self.driver)
         return objectList
 

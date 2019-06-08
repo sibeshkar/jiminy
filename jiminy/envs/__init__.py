@@ -7,3 +7,4 @@ from jiminy.envs.vnc_starcraft import StarCraftEnv
 from jiminy.envs.vnc_gtav import GTAVEnv
 from jiminy.envs.vnc_wog import WorldOfGooEnv
 from jiminy.envs.dummy_vnc_env import DummyVNCEnv
+from jiminy.envs.vnc_wob_env import SeleniumWoBEnv

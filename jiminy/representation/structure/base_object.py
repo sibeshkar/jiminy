@@ -1,16 +1,20 @@
 from jiminy.representation.structure import utils
 import json
+import datetime
 
 class JiminyBaseObject(object):
     def __init__(self, betaDOM, seleniumObject=None, seleniumDriver=None,
             boundingBox=None, objectType=None,
             referenceTag=None, innerText=None, value=None, focused=None):
+        self.metadata = dict()
         if seleniumObject != None:
             self.boundingBox = utils.getBoundingBoxCoords(seleniumObject, seleniumDriver)
             self.objectType = utils.getObjectType(seleniumObject)
             self.focused = (seleniumObject == seleniumDriver.switch_to.active_element)
             self.value = seleniumObject.get_attribute('value')
             self.innerText = utils.getInnerText(seleniumObject, seleniumDriver)
+            self.metadata["TrueTag"] = seleniumObject.tag_name
+            self.metadata["inferTime"] = datetime.datetime.now().strftime("%H%M%S")
         else:
             if boundingBox == None:
                 raise ValueError("Bounding box can not be None")
@@ -22,11 +26,8 @@ class JiminyBaseObject(object):
             self.objectType = objectType
         self.objectPixels = utils.getPixelsForBoundingBox(betaDOM, self.boundingBox)
         self.children = []
-        self.metadata = dict({
-            "ObjectType" : self.objectType
-            })
 
-    def toString(self):
+    def __str__(self):
         jiminyDict = dict()
         jiminyDict['boundingBox'] = self.boundingBox
         jiminyDict['objectType'] = self.objectType

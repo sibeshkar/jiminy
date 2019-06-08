@@ -1,8 +1,11 @@
 from jiminy.vectorized.core import Env
+import time
 # from jiminy.wrappers.experimental import RepresentationWrapper
 from jiminy import vectorized
 from jiminy.representation.structure import utils, JiminyBaseObject
 from jiminy.utils.webloader import WebLoader
+from jiminy.envs import SeleniumWoBEnv
+from jiminy.spaces import vnc_event
 import os
 
 class betaDOMInstance(vectorized.ObservationWrapper):
@@ -13,7 +16,7 @@ class betaDOMInstance(vectorized.ObservationWrapper):
     def _observation(self, obs):
         if isinstance(obs, WebLoader):
             fname = utils.saveScreenToFile(obs.driver)
-            self.fname.append(fname)
+            self.flist.append(fname)
             if fname is None or fname == "":
                 raise ValueError("fname for screenshot can not be null")
             self.pixels = utils.getPixelsFromFile(fname)
@@ -24,6 +27,11 @@ class betaDOMInstance(vectorized.ObservationWrapper):
             TODO: build this
             """
             raise NotImplementedError
+
+    def __str__(self):
+        strval = str(self.flist) + "\n"
+        for obj in self.objectList: strval += (obj.__str__() + "\n")
+        return strval[:-1]
 
 class betaDOM(vectorized.ObservationWrapper):
     """
@@ -45,9 +53,17 @@ class betaDOM(vectorized.ObservationWrapper):
 
     def _reset(self):
         self.env.reset()
-        self.
+
+    def __str__(self):
+        strval = self.env.__str__() + "\n"
+        for instance in self.betadom_instance_list: strval += (instance.__str__() + "\n")
+        return strval[:-1]
 
 if __name__ == "__main__":
-    betadom = betaDOM(env=Env())
-    webloader = WebLoader("Firefox")
-    betadom.observation(webloader)
+    wobenv = SeleniumWoBEnv()
+    wobenv.configure(_n=1, remotes=["file:///Users/prannayk/ongoing_projects/jiminy-project/miniwob-plusplus/html/miniwob/click-button.html"])
+    betadom = betaDOM(wobenv)
+    obs = betadom.reset()
+    betadom.observation(obs)
+    print(betadom)
+    wobenv.close()

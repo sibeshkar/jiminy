@@ -27,3 +27,21 @@ def getInputFields(webDriverObject):
             inputObjects.append(inputObject)
     return inputObjects
 
+def getButtonFields(webDriverObject):
+    inputObjects = []
+    for inputObject in webDriverObject.find_elements_by_xpath("//button"):
+        if not checkHidden(webDriverObject, inputObject):
+            inputObjects.append(inputObject)
+    return inputObjects
+
+def getTextFields(webDriverObject):
+    inputObjects = []
+    for inputObject in webDriverObject.find_elements_by_xpath("//p"):
+        if not checkHidden(webDriverObject, inputObject):
+            inputObjects.append(inputObject)
+    for inputObject in webDriverObject.find_elements_by_xpath("//div"):
+        if not checkHidden(webDriverObject, inputObject) and inputObject.text != None and inputObject.text != "":
+            inputObjects.append(inputObject)
+    return inputObjects
+
+

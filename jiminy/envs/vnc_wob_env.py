@@ -6,8 +6,8 @@ from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.events import EventFiringWebDriver, AbstractEventListener
 from jiminy import spaces
-from jiminy.representation.structure import betaDOM
 import numpy as np
+import time
 
 class FirefoxListener(AbstractEventListener):
     def before_click(self, element, driver):
@@ -24,7 +24,7 @@ class SeleniumWoBEnv(DummyVNCEnv):
     def __init__(self):
         self._started = False
         self.observation_space = spaces.VNCObservationSpace()
-        self.action_space = spaces.VNCActionSpace()
+        self.action_space = spaces.VNCActionSpace(buttonmasks=[0,1], screen_shape=(160, 210), event_type=1)
         self.buttonmask = 0
 
     def start_listener(self):
@@ -50,12 +50,19 @@ class SeleniumWoBEnv(DummyVNCEnv):
         for i in range(self.n):
             self.web_driver_list[i].loadPage(self.remotes[i])
         self.started = True
-        self.reset()
 
     def _reset(self):
+        action_list = []
         for i in range(self.n):
-            self.web_driver_list[i].loadPage(self.remotes[i])
-        return self.web_driver_list
+            action_list.append(self.action_space.sample())
+            action_list[-1].buttonmask = 1
+        self._step(action_list)
+        action_list = []
+        for i in range(self.n):
+            action_list.append(self.action_space.sample())
+            action_list[-1].buttonmask = 0
+        obs, _, _, _ = self._step(action_list)
+        return obs
 
     def _step(self, action_n):
         assert self.n == len(action_n), "Expected {} actions but received {}: {}".format(self.n, len(action_n), action_n)
@@ -93,7 +100,7 @@ class SeleniumWoBEnv(DummyVNCEnv):
     def _action_impl(self, web_driver, action):
         webaction = ActionChains(web_driver.driver)
         if isinstance(action, vnc_event.KeyEvent):
-            key_action = vnc_event.KeyEvent._key_sym_to_name[action]
+            key_action = vnc_event.KeyEvent._keysym_to_name[action]
             if key_action in Keys.__dict__:
                 key_action = Keys.__dict__[key_action]
             if action.down:
@@ -105,12 +112,12 @@ class SeleniumWoBEnv(DummyVNCEnv):
             webaction.move_to_element_with_offset(body, 0, 0)
             webaction.move_by_offset(action.x, action.y)
             # TODO(prannayk) : implement other clicks except right click
-            if (action.buttonmask & ~(self.buttonmask & 1)) :
+            if (action.buttonmask != self.buttonmask) and action.buttonmask == 1:
                 webaction.click_and_hold()
                 self.buttonmask = action.buttonmask
-            else:
+            elif (action.buttonmask != self.buttonmask) and action.buttonmask == 0:
                 webaction.release()
-                self.last_mouse_action = 0
+                self.buttonmask = action.buttonmask
         webaction.perform()
 
     def _close(self):
@@ -118,15 +125,12 @@ class SeleniumWoBEnv(DummyVNCEnv):
 
 if __name__ == "__main__":
     wobenv = SeleniumWoBEnv()
-    wobenv.configure(_n=2, remotes=["https://www.google.com/", "https://www.google.com/"])
-    element = wobenv.web_driver_list[0].driver.find_element_by_class_name("RNNXgb")
+    wobenv.configure(_n=1, remotes=["file:///Users/prannayk/ongoing_projects/jiminy-project/miniwob-plusplus/html/miniwob/click-button.html"])
+    element = wobenv.web_driver_list[0].driver.find_element_by_id("sync-task-cover")
     rect = element.rect
     x = rect['x'] + (rect['width'] / 2.)
     y = rect['y'] + (rect['height'] / 2.)
     vnc_click = vnc_event.PointerEvent(x, y, 1)
-    wobenv.step([vnc_click, vnc_click])
+    wobenv.step([vnc_click])
     vnc_click = vnc_event.PointerEvent(x, y, 0)
-    obs, _, _, _ = wobenv.step([vnc_click, vnc_click])
-    betadom = betaDOM(wobenv)
-    betadom.observation(obs)
-    wobenv.close()
+    obs, _, _, _ = wobenv.step([vnc_click])
