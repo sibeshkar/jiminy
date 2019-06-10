@@ -42,6 +42,7 @@ class RewardState(object):
         self.push_info(info)
 
     def push_info(self, info):
+        print(info)
         merge.merge_infos(self.info, info)
 
     def push(self, reward, done, info):
