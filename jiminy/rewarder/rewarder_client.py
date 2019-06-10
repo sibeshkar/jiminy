@@ -121,7 +121,7 @@ class RewarderClient(websocket.WebSocketClientProtocol):
             done = body['done']
             info = body['info']
             extra_logger.debug('[%s] Received %s: reward=%s done=%s info=%s episode_id=%s', self.factory.label, method, reward, done, info, episode_id)
-            print("Reward response is", response) ##Temporary debug
+            #print("Reward response is", response) ##Temporary debug
             pyprofile.incr('rewarder_client.reward', reward)
             if done:
                 pyprofile.incr('rewarder_client.done')
@@ -162,7 +162,7 @@ class RewarderClient(websocket.WebSocketClientProtocol):
             return
 
         parent_id = headers.get('parent_message_id')
-        if parent_id is not None:
+        if parent_id:
             try:
                 spec = self._requests.pop(parent_id)
             except KeyError:
