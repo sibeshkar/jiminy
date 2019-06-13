@@ -108,6 +108,11 @@ metadata_pixels = {
     'type': 'pixels',
 }
 
+register(
+    id='VNC.Core-v0',
+    entry_point='jiminy.wrappers:WrappedCoreVNCEnv',
+)
+
 # Should be exactly the same as CartPole-v0
 register(
     id='gym-core.CartPoleLowDSync-v0',

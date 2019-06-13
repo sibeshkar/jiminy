@@ -4,6 +4,7 @@ from jiminy.remotes.allocator_remote import AllocatorManager
 from jiminy.remotes.docker_remote import DockerManager
 from jiminy.remotes.hardcoded_addresses import HardcodedAddresses
 
+
 def build(client_id, remotes, runtime=None, start_timeout=None, **kwargs):
     if isinstance(remotes, int):
         remotes = str(remotes)

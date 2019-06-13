@@ -24,6 +24,9 @@ def wrap(env):
 def WrappedVNCEnv():
     return wrap(envs.VNCEnv())
 
+def WrappedCoreVNCEnv():
+    return wrap(envs.CoreVNCEnv())
+
 def WrappedGymCoreEnv(gym_core_id, fps=None, rewarder_observation=False):
     # Don't need to store the ID on the instance; it'll be retrieved
     # directly from the spec

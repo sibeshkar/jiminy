@@ -1,4 +1,5 @@
 import jiminy.envs.vnc_env
+from jiminy.envs.core_env import CoreVNCEnv
 from jiminy.envs.vnc_env import VNCEnv
 from jiminy.envs.vnc_core_env import GymCoreEnv, GymCoreSyncEnv
 from jiminy.envs.vnc_flashgames import FlashgamesEnv
