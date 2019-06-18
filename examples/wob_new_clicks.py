@@ -7,7 +7,7 @@ if __name__ == "__main__":
     env = gym.make("VNC.Core-v0")
     env = jiminy.wrappers.experimental.SoftmaxClickMouse(env)
 
-    env.configure(env='sibeshkar/wob-v0', task='TicTacToe', remotes='vnc://localhost:5901+15901')
+    env.configure(env='sibeshkar/wob-v0', task='ClickShades', remotes='vnc://localhost:5901+15901')
     obs = env.reset()
     
     time.sleep(1)
@@ -34,6 +34,7 @@ if __name__ == "__main__":
         print("Reward", reward)
         print("Is done", is_done)
         print("Info", info)
+        env.render()
 
 
         #im = Image.fromarray(obs[0])

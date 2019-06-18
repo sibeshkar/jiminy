@@ -236,6 +236,10 @@ class CoreVNCEnv(vectorized.Env):
             visual_observation_n = [None] * self.n
             vnc_err_n = [None] * self.n
 
+        self._handle_initial_n(visual_observation_n, reward_n)
+        self._handle_err_n(err_n, vnc_err_n, info_n, visual_observation_n, reward_n, done_n)
+        self._handle_crashed_n(info_n)
+
 
         return visual_observation_n, reward_n, done_n, {'n': info_n}
     
@@ -385,6 +389,74 @@ class CoreVNCEnv(vectorized.Env):
                 self.diagnostics.close()
             if hasattr(self, 'remotes_manager') and self._remotes_manager:
                 self._remotes_manager.close()
+
+    def _render(self, mode='human', close=False):
+        if close:
+            # render(close) is not currently supported by the Go VNCSession
+            return
+
+        if mode is 'human' and self.vnc_session is not None:
+            if self.connection_names[0]:
+                self.vnc_session.render(self.connection_names[0])
+
+    def _handle_initial_n(self, observation_n, reward_n):
+        if self.rewarder_session is None:
+            return
+
+        for i, reward in enumerate(reward_n):
+            if reward is None:
+                # Index hasn't come up yet, so ensure the observation
+                # is blanked out.
+                observation_n[i] = None
+
+    def _handle_err_n(self, err_n, vnc_err_n, info_n, observation_n=None, reward_n=None, done_n=None):
+        # Propogate any errors upwards.
+        for i, (err, vnc_err) in enumerate(zip(err_n, vnc_err_n)):
+            if err is None and vnc_err is None:
+                # All's well at this index.
+                continue
+
+            if observation_n is not None:
+                observation_n[i] = None
+                done_n[i] = True
+
+            # Propagate the error
+            if err is not None and vnc_err is not None:
+                # Both the rewarder and vnc failed at the same
+                # time. What are the odds?
+                info_n[i]['error'] = 'Both VNC and rewarder sessions failed: {}; {}'.format(vnc_err, err)
+            elif err is not None:
+                info_n[i]['error'] = 'Rewarder session failed: {}'.format(err)
+            else:
+                info_n[i]['error'] = 'VNC session failed: {}'.format(vnc_err)
+
+            extra_logger.info('[%s] %s', self.connection_names[i], info_n[i]['error'])
+
+            if self.allow_reconnect:
+                logger.info('[%s] Making a call to the allocator to replace crashed index: %s', self.connection_names[i], info_n[i]['error'])
+                self.remote_manager.allocate([str(i)])
+
+            self.crashed[i] = self.connection_names[i]
+            self._close(i)
+    
+    def _handle_crashed_n(self, info_n):
+        # for i in self.crashed:
+        #     info_n[i]['env_status.crashed'] = True
+
+        if self.allow_reconnect:
+            return
+
+        if len(self.crashed) > 0:
+            errors = {}
+            for i, info in enumerate(info_n):
+                if 'error' in info:
+                    errors[self.crashed[i]] = info['error']
+
+            if len(errors) == 0:
+                raise error.Error('{}/{} environments have crashed. No error key in info_n: {}'.format(len(self.crashed), self.n, info_n))
+            else:
+                raise error.Error('{}/{} environments have crashed! Most recent error: {}'.format(len(self.crashed), self.n, errors))
+
     
     def __str__(self):
         return 'CoreVNCEnv'
