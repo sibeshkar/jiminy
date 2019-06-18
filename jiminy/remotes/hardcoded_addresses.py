@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class HardcodedAddresses(object):
     @classmethod
-    def build(cls, remotes, **kwargs):
+    def build(cls, remotes, env, task, **kwargs):
         parsed = urlparse.urlparse(remotes)
         if parsed.scheme != 'vnc':
             raise error.Error('HardcodedAddresses must be initialized with a string starting with vnc://: {}'.format(remotes))
@@ -21,16 +21,19 @@ class HardcodedAddresses(object):
         # right now.
         password = query.get('password', [utils.default_password()])[0]
         vnc_addresses, rewarder_addresses = parse_remotes(addresses)
-        res = cls(vnc_addresses, rewarder_addresses, vnc_password=password, rewarder_password=password, **kwargs)
+        res = cls(vnc_addresses, rewarder_addresses, vnc_password=password, rewarder_password=password, env=env, task=task, **kwargs)
         return res, res.available_n
 
-    def __init__(self, vnc_addresses, rewarder_addresses, vnc_password, rewarder_password, start_timeout=None):
+    def __init__(self, vnc_addresses, rewarder_addresses, vnc_password, rewarder_password, env, task=None,start_timeout=None):
         if vnc_addresses is not None:
             self.available_n = len(vnc_addresses)
         elif rewarder_addresses is not None:
             self.available_n = len(rewarder_addresses)
         else:
             assert False
+
+        self.env = env
+        self.task = task
 
         self.supports_reconnect = False
         self.connect_vnc = vnc_addresses is not None
@@ -73,6 +76,8 @@ class HardcodedAddresses(object):
                 vnc_password=self.vnc_password,
                 rewarder_address=rewarder_address,
                 rewarder_password=self.rewarder_password,
+                env=self.env,
+                task=self.task
             )
             remotes.append(env)
         return remotes

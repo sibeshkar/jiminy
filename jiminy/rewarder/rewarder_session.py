@@ -195,6 +195,7 @@ class RewarderSession(object):
                 # we don't need to bump post.
                 #
                 # tl;dr hardcoding 0.0 here avoids a double reset.
+                #TODO: Add env.launch here
                 reply = yield self._send_env_reset(client, seed=seed, episode_id=0)
             else:
                 # No env_id requested, so we just proceed without a reset

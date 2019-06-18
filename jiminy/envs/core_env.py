@@ -114,7 +114,7 @@ class CoreVNCEnv(vectorized.Env):
         self._send_actions_over_websockets = False
         self._skip_network_calibration = True
 
-    def configure(self, envs=None, tasks=None, remotes=None,
+    def configure(self, env=None, task=None, remotes=None, #TODO: Currently env and task is singular, will be plural in the future
                   client_id=None,
                   start_timeout=None, docker_image=None,
                   ignore_clock_skew=False, disable_action_probes=False,
@@ -141,12 +141,13 @@ class CoreVNCEnv(vectorized.Env):
 
         logger.info("Configuring the environment...")
 
-        #self.remote_manager, self.n = remotes_module.build(client_id=client_id,remotes=remotes)
         self.remote_manager, self.n = remotes_module.build(
             client_id=client_id,
             remotes=remotes, runtime=runtime, start_timeout=start_timeout,
             api_key=api_key,
             use_recorder_ports=record,
+            env=env,
+            task=task
         )
 
         self.connection_names = [None] * self.n
@@ -167,13 +168,11 @@ class CoreVNCEnv(vectorized.Env):
                 vnc_kwargs.setdefault('subsample_level', 2)
             # Filter out None values, since some drivers may not handle them correctly
             vnc_kwargs = {k: v for k, v in vnc_kwargs.items() if v is not None}
-            #logger.info('Using VNCSession arguments: %s. (Customize by running "env.configure(vnc_kwargs={...})"', vnc_kwargs)
+            logger.info('Using VNCSession arguments: %s. (Customize by running "env.configure(vnc_kwargs={...})"', vnc_kwargs)
             self.vnc_kwargs = vnc_kwargs
             self.vnc_session = cls()
         else:
             self.vnc_session = None
-
-        #self._started = True
 
         self._observer = observer
         if self.remote_manager.connect_rewarder:
@@ -237,23 +236,7 @@ class CoreVNCEnv(vectorized.Env):
             visual_observation_n = [None] * self.n
             vnc_err_n = [None] * self.n
 
-        
 
-        # observation_n = [{
-        #     'vision': np.zeros((1024, 768, 3), dtype=np.uint8),
-        #     'text': [],	//http://127.0.0.1:3000/miniwob/bisect-angle.html
-
-        #     'action': action_n[i]
-        # } for i in range(self.n)]
-
-        # reward_n = []
-        # done_n = []
-        # info_n = []
-        # for reward_buffer in self._reward_buffers:
-        #     reward, done, info = reward_buffer.pop()
-        #     reward_n.append(reward)
-        #     done_n.append(done)
-        #     info_n.append(info)
         return visual_observation_n, reward_n, done_n, {'n': info_n}
     
     def _pop_rewarder_session(self, peek_d):
@@ -301,7 +284,7 @@ class CoreVNCEnv(vectorized.Env):
             self.connect(
                 int(remote.handle), name=name,
                 vnc_address=remote.vnc_address, vnc_password=remote.vnc_password,
-                rewarder_address=remote.rewarder_address, rewarder_password=remote.rewarder_password)
+                rewarder_address=remote.rewarder_address, rewarder_password=remote.rewarder_password, env=remote.env, task=remote.task)
 
     def _action_d(self, action_n):
         action_d = {}
@@ -309,7 +292,7 @@ class CoreVNCEnv(vectorized.Env):
             action_d[self.connection_names[i]] = action
         return action_d
 
-    def connect(self, i, name, vnc_address, rewarder_address, vnc_password=None, rewarder_password=None):
+    def connect(self, i, name, vnc_address, rewarder_address,env, task=None, vnc_password=None, rewarder_password=None ):
         self.connection_names[i] = name
         self.connection_labels[i] = '{}:{}'.format(name, vnc_address)
         if self.vnc_session is not None:
@@ -334,7 +317,7 @@ class CoreVNCEnv(vectorized.Env):
             # else:
             #     env_id = None
 
-            env_id = 'sibeshkar/wob-v0/ClickShades' #temporarily created, not will pass env_id as argument finally
+            env_id = env + '/' + task #temporarily created, not will pass env_id as argument finally
             #env_id = 'wob.mini.TicTacToe-v0'
             if self._seed_value is not None:
                 # Once we use a seed, we clear it so we never
