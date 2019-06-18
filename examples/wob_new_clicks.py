@@ -7,9 +7,10 @@ if __name__ == "__main__":
     env = gym.make("VNC.Core-v0")
     env = jiminy.wrappers.experimental.SoftmaxClickMouse(env)
 
-    #env.configure(remotes='vnc://gpu:5900+15900')
     env.configure(env='sibeshkar/wob-v0', task='TicTacToe', remotes='vnc://localhost:5901+15901')
     obs = env.reset()
+    
+    time.sleep(1)
 
     while True:
         a = env.action_space.sample()

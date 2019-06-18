@@ -317,7 +317,7 @@ class CoreVNCEnv(vectorized.Env):
             # else:
             #     env_id = None
 
-            env_id = env + '/' + task #temporarily created, not will pass env_id as argument finally
+            env_id = env #temporarily created, not will pass env_id as argument finally
             #env_id = 'wob.mini.TicTacToe-v0'
             if self._seed_value is not None:
                 # Once we use a seed, we clear it so we never
@@ -332,7 +332,7 @@ class CoreVNCEnv(vectorized.Env):
             assert rewarder_password, "Missing rewarder password: {}".format(rewarder_password)
             network = self.rewarder_session.connect(
                 name=name, address=rewarder_address,
-                seed=seed, env_id=env_id,
+                seed=seed, env_id=env_id, task=task,
                 fps=self.metadata['video.frames_per_second'],
                 password=rewarder_password,
                 label=self.connection_labels[i],
