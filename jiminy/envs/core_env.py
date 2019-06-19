@@ -80,6 +80,19 @@ def compile_action(event):
     else:
         return event.compile()
 
+def build_observation_n(visual_observation_n, info_n):
+    observation_n = []
+    for visual, info in zip(visual_observation_n, info_n):
+        text = info.pop('env.text', [])
+        obs = {
+            'vision': visual,
+            'text': text,
+        }
+        if 'env.generic' in info:
+            obs['generic'] = info.pop('env.generic')
+        observation_n.append(obs)
+    return observation_n
+
 class CoreVNCEnv(vectorized.Env):
     """
 
@@ -126,7 +139,7 @@ class CoreVNCEnv(vectorized.Env):
                   sample_env_ids=None,
     ):
         
-        runtime = 'world-of-bits'
+        runtime = 'world-of-bits' #TODO:Remove this in future editions 
 
         twisty.start_once()
 
@@ -235,13 +248,15 @@ class CoreVNCEnv(vectorized.Env):
         else:
             visual_observation_n = [None] * self.n
             vnc_err_n = [None] * self.n
+        
+        observation_n = build_observation_n(visual_observation_n, info_n)
 
-        self._handle_initial_n(visual_observation_n, reward_n)
-        self._handle_err_n(err_n, vnc_err_n, info_n, visual_observation_n, reward_n, done_n)
+        self._handle_initial_n(observation_n, reward_n)
+        self._handle_err_n(err_n, vnc_err_n, info_n, observation_n, reward_n, done_n)
         self._handle_crashed_n(info_n)
 
 
-        return visual_observation_n, reward_n, done_n, {'n': info_n}
+        return observation_n, reward_n, done_n, {'n': info_n}
     
     def _pop_rewarder_session(self, peek_d):
         with pyprofile.push('vnc_env.VNCEnv.rewarder_session.pop'):
