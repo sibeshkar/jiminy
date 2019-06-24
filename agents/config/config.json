@@ -1,11 +1,13 @@
 {
+    "word_list_file" : "config/word_list.txt",
     "dom_embedding_size" : 128,
     "word_embedding_size" : 300, 
     "word_max_length": 15, 
     "dom_max_length": 5,
     "value_function_layers" : [64,32,1], 
     "value_activations" : ["relu", "relu", "tanh"],
-    "policy_function_layers" : [64,32,3], 
+    "policy_function_layers" : [128,64], 
     "policy_activations" : ["relu", "relu", "tanh"],
+    "dom_object_list" : ["input", "text", "click"],
     "name" : "BetaDOMAgent"
 }

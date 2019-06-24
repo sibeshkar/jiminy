@@ -22,6 +22,7 @@ class betaDOMInstance(vectorized.ObservationWrapper):
             self.pixels = utils.getPixelsFromFile(fname)
             self.objectList = [JiminyBaseObject(betaDOM=self, seleniumDriver=obs.driver, seleniumObject=obj)
                     for obj in obs.getRawObjectList()]
+            self.query = JiminyBaseObject(betaDOM=self, seleniumDriver=obs.driver, seleniumObject=obs.getInstructionFields())
         elif isinstance(self, np.array):
             """
             TODO: build this
@@ -30,7 +31,8 @@ class betaDOMInstance(vectorized.ObservationWrapper):
 
     def __str__(self):
         strval = str(self.flist) + "\n"
-        for obj in self.objectList: strval += (obj.__str__() + "\n")
+        for obj in self.objectList: strval += (str(obj) + "\n")
+        strval += str(self.query)
         return strval[:-1]
 
 class betaDOM(vectorized.ObservationWrapper):
@@ -46,13 +48,12 @@ class betaDOM(vectorized.ObservationWrapper):
         self.env = env
         self.betadom_instance_list = [betaDOMInstance() for _ in range(self.n)]
 
-    def _observation(self, obs):
-        assert (isinstance(obs, list) and len(obs) == self.n), "Expected observation to be list of size {}".format(self.n, obs)
-        for i, ob in enumerate(obs):
-            self.betadom_instance_list[i].observation(ob)
+    def _observation_runner(self, i, obs):
+        self.betadom_instance_list[i].observation(obs)
+        return self.betadom_instance_list[i]
 
     def _reset(self):
-        self.env.reset()
+        return self.env.reset()
 
     def __str__(self):
         strval = self.env.__str__() + "\n"
@@ -65,5 +66,4 @@ if __name__ == "__main__":
     betadom = betaDOM(wobenv)
     obs = betadom.reset()
     betadom.observation(obs)
-    print(betadom)
     wobenv.close()

@@ -31,8 +31,8 @@ class _CropObservations(vectorized.ObservationWrapper):
         # modify observation_space? (if so, how to know depth and channels before we have seen the first frame?)
         # self.observation_space = Box(0, 255, shape=(height, width, 3))
 
-    def _observation(self, observation_n):
-        return [self._crop_frame(observation) for observation in observation_n]
+    def _observation_runner(self, index, observation):
+        return self._crop_frame(observation)
 
     def _crop_frame(self, frame):
         if frame is not None:

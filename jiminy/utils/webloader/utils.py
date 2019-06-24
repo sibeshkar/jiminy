@@ -44,4 +44,11 @@ def getTextFields(webDriverObject):
             inputObjects.append(inputObject)
     return inputObjects
 
+def getInstructionFields(webDriverObject):
+    inputObjects = []
+    for inputObject in webDriverObject.find_elements_by_id("query"):
+        if not checkHidden(webDriverObject, inputObject):
+            inputObjects.append(inputObject)
+    assert len(inputObjects) == 1, "Expected single query object found: {}".format(len(inputObjects))
+    return inputObjects[0]
 

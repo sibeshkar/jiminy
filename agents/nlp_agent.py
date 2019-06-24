@@ -1,5 +1,6 @@
 import argparse
 import json
+from replay_buffer import ReplayBuffer
 from jiminy.representation.structure import betaDOM
 from jiminy.envs import SeleniumWoBEnv
 from beta_dom_net import BetaDOMNet
@@ -24,15 +25,8 @@ if __name__ == "__main__":
     with open(args.config) as f:
         json_str = f.read()
     config = json.loads(json_str)
-    word2vec_embeddings, word_list = load_embeddings(config['wv_model'])
-    dom_object_list = ["input", "click", "text"]
-    domnet = BetaDOMNet(dom_embedding_size=config["dom_embedding_size"],
-        word_embedding_size=config["word_embedding_size"],
-        word_dict=word_list, dom_object_type_list=dom_object_list,
-        word_max_length=config["word_max_length"], dom_max_length=config["dom_max_length"],
-        value_function_layers=config["value_function_layers"],
-        value_activations=config["value_activations"],
-        policy_function_layers=config["policy_function_layers"],
-        policy_activations=config["policy_activations"],
-        word_vectors=word2vec_embeddings,
-        name=config["name"])
+
+    # TODO(prannayk): create a classmethod to which config can be passed
+    domnet = BetaDOMNet.from_config(config, betadom)
+
+    ## implements A2C algorithm ##

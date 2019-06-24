@@ -1,6 +1,8 @@
+from jiminy.representation.structure import betaDOM
+from jiminy.envs import SeleniumWoBEnv
 import tensorflow as tf
 import numpy as np
-# tf.enable_eager_execution()
+import utils
 
 from file_initializer import FileInitializer
 
@@ -13,29 +15,28 @@ class Vocabulary(object):
             self.sym2key[i] = obj
         self.length = len(objectlist)
 
-class AttentionLayer(tf.keras.Model):
-    def __init__(self, units):
-        super(AttentionLayer, self).__init__()
+    def to_sym(self, entity_list):
+        indices = np.zeros([len(entity_list)])
+        for i, entity in enumerate(entity_list):
+            assert entity in self.key2sym, "Key {} not found in Vocabulary".format(entity)
+            indices[i] = self.key2sym[entity]
+        indices = indices.astype(np.int32)
+        return indices
+
 
 class BetaDOMNet(object):
-    def attention_layer(self, units, query, values):
-        W1 = tf.keras.layers.Dense(units)
-        W2 = tf.keras.layers.Dense(units)
-        V = tf.keras.layers.Dense(1)
-        time_axis = tf.expand_dims(query, 1)
-        score = V(tf.nn.tanh(W1(time_axis)
-            + W2(values)))
-        attention_weights = tf.nn.softmax(score, axis=1)
-        context_vector = tf.reduce_sum(values*attention_weights, axis=1)
-        return context_vector, attention_weights
-
     def __init__(self, dom_embedding_size=128,
             word_embedding_size=128, word_dict=["null"], dom_object_type_list=["input", "click", "text"],
             word_max_length=15, dom_max_length=15,
             value_function_layers=[64,32,1], value_activations=['tanh', 'tanh', 'sigmoid'],
             policy_function_layers=[64,32,3], policy_activations=['tanh', 'tanh', 'sigmoid'],
-            word_vectors=np.zeros([1, 128]), name="BetaDOMNet"):
+            word_vectors=np.zeros([1, 128]), name="BetaDOMNet", betadom=None):
+        assert (not betadom is None), "BetaDOM can not be null"
+        self.betadom = betadom
         self.name = name
+        self.n = self.betadom.n
+        self.dom_max_length = dom_max_length
+        self.word_max_length = word_max_length
 
         ################################ LAYERS for the model #####################################
         # self.dom_embedding
@@ -50,7 +51,7 @@ class BetaDOMNet(object):
         self.word_dict = Vocabulary(word_dict)
         self.word_embedding_layer = tf.keras.layers.Embedding(self.word_dict.length,
                 output_dim=self.word_embedding_size,
-                embeddings_initializer=tf.keras.initializers.Constant(word_vectors),
+                # embeddings_initializer=tf.keras.initializers.Constant(word_vectors),
                 trainable=False, name="word_embedding_layer")
 
         self.word_bilstm_layer = tf.keras.layers.Bidirectional(layer=tf.keras.layers.LSTM(64,
@@ -62,37 +63,121 @@ class BetaDOMNet(object):
         self.dom_word_input = tf.keras.layers.Input(shape=[dom_max_length], dtype=tf.int32, name="dom_word_input")
         # dom_shape_input: bounding box
         self.dom_shape_input = tf.keras.layers.Input(shape=[dom_max_length, 4], dtype=tf.float32, name="bounding_box_input")
+        # dom_embedding_input: label for the dom element of the element -- driven by objectType in JiminyBaseObject
         self.dom_embedding_input = tf.keras.layers.Input(shape=[dom_max_length], dtype=tf.int32, name="dom_tag_input")
         # instruction_word_input:
         self.instruction_word_input = tf.keras.layers.Input(shape=[word_max_length], dtype=tf.int32, name="instruction_words")
 
         ################################ Bringing together the model #####################################
-        dom_word_embedding = (self.word_embedding_layer(self.dom_word_input))
-        dom_tag_embedding = (self.dom_embedding_layer(self.dom_embedding_input))
-        dom_tag_embedding = (dom_tag_embedding)
+        dom_word_embedding = self.word_embedding_layer(self.dom_word_input)
+        dom_tag_embedding = self.dom_embedding_layer(self.dom_embedding_input)
+        # dom_tag_embedding = (dom_tag_embedding)
         # shapecheck: dom_word_embedding: [batch_size, dom_max_length, word_embedding]
         dom_embedding = tf.concat([dom_word_embedding, self.dom_shape_input, dom_tag_embedding], axis=-1, name="full_dom_embedding")
 
         # instruction embedding
         instruction_embeddings = self.word_embedding_layer(self.instruction_word_input)
         lstm_results = self.word_bilstm_layer(instruction_embeddings)
-        instruction_embedding, _ = self.attention_layer(64, lstm_results[1], lstm_results[0])
+        instruction_embedding, _ = utils.attention_layer(64, lstm_results[1], lstm_results[0])
 
         # creating the final state
-        state,_ = self.attention_layer(64, instruction_embedding, dom_embedding)
+        state,_ = utils.attention_layer(64, instruction_embedding, dom_embedding)
 
         # value function
         value = state
         for i,width in enumerate(value_function_layers):
             value = tf.keras.layers.Dense(width, activation=value_activations[i])(value)
 
+
         policy = state
         for i,width in enumerate(policy_function_layers):
             policy = tf.keras.layers.Dense(width, activation=policy_activations[i])(policy)
+        policy_x = tf.keras.layers.Dense(betadom.env.screen_shape[0], activation='softmax', name='x-coordinate-action')(policy)
+        policy_y = tf.keras.layers.Dense(betadom.env.screen_shape[1], activation='softmax', name='y-coordinate-action')(policy)
+        policy_b = tf.keras.layers.Dense(len(betadom.env.buttonmasks), activation='softmax', name='button-mask-action')(policy)
 
-        model = tf.keras.Model(inputs=[self.dom_word_input, self.dom_shape_input, self.dom_embedding_input, self.instruction_word_input],
-                outputs=[value, policy])
-        tf.keras.utils.plot_model(model, 'model.png', show_shapes=True)
+        self.model = tf.keras.Model(inputs=[self.dom_word_input, self.dom_shape_input, self.dom_embedding_input, self.instruction_word_input],
+                outputs=[value, [policy_x, policy_y, policy_b]])
+        tf.keras.utils.plot_model(self.model, 'model.png', show_shapes=True)
+
+
+    @classmethod
+    def from_config(cls, config, betadom):
+        return cls(dom_embedding_size=config["dom_embedding_size"],
+                word_embedding_size=config["word_embedding_size"],
+                word_dict=["previous", "submit", "next", "none", "click", "on", "the", "yes", "no"],
+                dom_object_type_list=config["dom_object_list"],
+                word_max_length=config["word_max_length"],
+                dom_max_length=config["dom_max_length"],
+                value_function_layers=config["value_function_layers"],
+                value_activations=config["value_activations"],
+                policy_function_layers=config["policy_function_layers"],
+                policy_activations=config["policy_activations"],
+                word_vectors=None, name=config["name"], betadom=betadom)
+
+    def save(self, path):
+        if not os.path.exists(path):
+            os.mkdir(path)
+        tf.keras.models.save_model(self.model, path)
+
+    def step_runner(self, index, obs, model=None):
+        if model is None:
+            model = self.model
+        betadom_instance = self.betadom.observation_runner(index, obs)
+        model_input = self.instance_input(betadom_instance)
+        value, policy = model(model_input)
+        return betadom_instance, value[0], step_policy(policy)[0]
+
+    def step(self, obs, model=None):
+        if model is None:
+            model = self.model
+        self.betadom.observation(obs)
+        model_input_list = []
+        for i in range(self.n):
+            model_input = self.step_instance_input(
+                    self.betadom.betadom_instance_list[i])
+            model_input_list.append(model_input)
+        assert len(model_input_list) == self.n, "Expected model_input_list to be of size {} but got {} : {}".format(self.n, len(model_input_list), model_input_list)
+        model_input = [np.concatenate([model_input_list[j][i] for j in range(self.n)],
+            axis=0) for i in range(4)]
+        value, policy = model(model_input)
+        return value, [step_policy(pol) for pol in policy]
+
+    def step_policy(self, policy_raw):
+        # implements the policy, -- which is greedy for us
+        # TODO(prannayk) : change this to epsilon greedy
+        return [vnc_event.PointerEvent(
+            np.argmax(policy_instance[0]),
+            np.argmax(policy_instance[1]),
+            np.argmax(policy_instance[2])) for policy_instance in policy_raw]
+
+    def step_instance_input(self, bi):
+        instruction = utils.process_text(self.betadom.betadom_instance_list[0].query.innerText)
+        instruction_input = self.word_dict.to_sym(instruction)
+        clickable_object_list = [obj for obj in filter(lambda x: x.objectType == 'click',
+            self.betadom.betadom_instance_list[0].objectList)]
+        tag_input = utils.pad(
+                self.dom_embedding_vocab.to_sym([obj.objectType
+                    for obj in clickable_object_list]),
+                self.dom_max_length, axis=0)
+        tag_text_input = utils.pad(
+                self.word_dict.to_sym([''.join(utils.process_text(obj.innerText))
+                    for obj in clickable_object_list]),
+                self.dom_max_length, axis=0)
+        tag_bounding_box = utils.pad(
+                np.array([np.array(list(obj.boundingBox.values()), dtype=np.float32)
+                    for obj in clickable_object_list]),
+                self.dom_max_length, axis=0)
+        model_input = [tag_text_input, tag_bounding_box, tag_input, instruction_input]
+        model_input = [np.expand_dims(arr, 0) for arr in model_input]
+        return model_input
 
 if __name__ == "__main__":
-    b = BetaDOMNet()
+    wobenv = SeleniumWoBEnv()
+    wobenv.configure(_n=1, remotes=["file:///Users/prannayk/ongoing_projects/jiminy-project/miniwob-plusplus/html/miniwob/click-button.html"])
+    betadom = betaDOM(wobenv)
+    obs = betadom.reset()
+    b = BetaDOMNet(betadom=betadom,
+            word_dict=utils.load_lines_ff("config/word_list.txt"))
+    print(b.step(obs, b.model))
+    wobenv.close()

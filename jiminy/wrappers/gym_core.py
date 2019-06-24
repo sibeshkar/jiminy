@@ -51,8 +51,8 @@ Crop the relevant portion of the monitor where an Atari enviroment resides.
         super(CropAtari, self).__init__(env)
         self.observation_space = gym_spaces.Box(0, 255, shape=(ATARI_HEIGHT, ATARI_WIDTH, 3))
 
-    def _observation(self, observation_n):
-        return [{'vision': ob['vision'][:ATARI_HEIGHT, :ATARI_WIDTH, :]} for ob in observation_n]
+    def _observation_runner(self, index, observation):
+        return {'vision': observation['vision'][:ATARI_HEIGHT, :ATARI_WIDTH, :]}
 
 def one_hot(indices, depth):
     return np.eye(depth)[indices]

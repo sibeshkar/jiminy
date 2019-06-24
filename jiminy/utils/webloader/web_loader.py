@@ -23,3 +23,5 @@ class WebLoader:
         objectList += utils.getTextFields(self.driver)
         return objectList
 
+    def getInstructionFields(self):
+        return utils.getInstructionFields(self.driver)

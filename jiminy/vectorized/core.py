@@ -44,7 +44,18 @@ class Wrapper(Env, Wrapper):
         self.env.configure(**kwargs)
 
 class ObservationWrapper(Wrapper, ObservationWrapper):
-    pass
+    def _observation(self, observation):
+        assert (isinstance(observation, list) and len(observation) == self.n), "Expected observation to be list of size {}".format(self.n, observation)
+        obs_list = []
+        for i, obs in enumerate(observation):
+            obs_list.append(self.observation_runner(i, obs))
+        return obs_list
+
+    def observation_runner(self, index, observation):
+        return self._observation_runner(index, observation)
+
+    def _observation_runner(self, index, observation):
+        raise NotImplementedError
 
 class RewardWrapper(Wrapper, RewardWrapper):
     pass

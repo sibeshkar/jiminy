@@ -21,10 +21,15 @@ class SeleniumWoBEnv(DummyVNCEnv):
     """
     Selenium based Env to interact with web pages
     """
-    def __init__(self):
+    def __init__(self, screen_shape=(160, 210), event_type=1, buttonmasks=[0,1]):
         self._started = False
+        self.screen_shape = screen_shape
+        self.event_type = event_type
+        self.buttonmasks = buttonmasks
         self.observation_space = spaces.VNCObservationSpace()
-        self.action_space = spaces.VNCActionSpace(buttonmasks=[0,1], screen_shape=(160, 210), event_type=1)
+        self.action_space = spaces.VNCActionSpace(buttonmasks=self.buttonmasks,
+                screen_shape=self.screen_shape,
+                event_type=self.event_type)
         self.buttonmask = 0
 
     def start_listener(self):
@@ -64,21 +69,37 @@ class SeleniumWoBEnv(DummyVNCEnv):
         obs, _, _, _ = self._step(action_list)
         return obs
 
+    def _reset_runner(self, index):
+        self._step_runner(index, self.action_space.sample())
+        obs, _, _, _ = self._step_runner(index, self.action_space.sample())
+        return obs
+
+    def step_runner(self, index, action):
+        return self._step_runner(index, action)
+
+    def _step_runner(self, index, action)
+        self._action_impl(self.web_driver_list[index], action_n[index])
+        reward = self._reward(self.web_driver_list[index])
+        done = self._get_env_data(self.web_driver_list[index])['done']
+        return self.web_driver_list[index], reward, done, {}
+
     def _step(self, action_n):
         assert self.n == len(action_n), "Expected {} actions but received {}: {}".format(self.n, len(action_n), action_n)
         assert self.action_space.contains(action_n), "Expected VNCActions by received {}".format(action_n)
 
         reward_list = [0. for _ in range(self.n)]
         done_list = [False for _ in range(self.n)]
+        obs_list = [None for _ in range(self.n)]
+        info_dict = {}
 
         for i in range(self.n):
-            self._action_impl(self.web_driver_list[i], action_n[i])
+            obs, reward, done, info = self._step_runner(i, action_n[i])
+            reward_list[i] = reward
+            done_list = done
+            info_dict["info_%d".format(i)] = info
+            obs_list[i] = obs
 
-        for i in range(self.n):
-            reward_list[i] = self._reward(self.web_driver_list[i])
-            done_list = self._get_env_data(self.web_driver_list[i])['done']
-
-        return self.web_driver_list, reward_list, done_list, {}
+        return obs_list, reward_list, done_list, info_dict
 
     def _reward(self, web_driver):
         json_reward = self._get_env_data(web_driver)
