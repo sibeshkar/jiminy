@@ -4,6 +4,7 @@ import queue
 import threading
 import logging
 import tensorflow as tf
+import utils
 
 class A3C(object):
     def __init__(self,
@@ -11,16 +12,21 @@ class A3C(object):
             momentum=0.999,
             learning_rate=1e-4,
             entropy_beta=1e-3,
-            clip_grad=0.05,
+            clip_grad=40.,
             logdir='./logs/a2c'):
         create_directory(logdir)
         self.logdir = logdir
         self.gamma = gamma
         self.learning_rate = learning_rate
         self.entropy_beta = entropy_beta
+        self.clip_grad = clip_grad
+        self.momentum = momentum
         self.queue_lock = threading.Lock()
         self.grad_queue = queue.Queue()
         logging.debug("A3C object created")
+
+        self.action_input = tf.keras.layers.Input(shape=[3], dtype=tf.int32,name='action_input')
+        self.reward_input = tf.keras.layers.Input(shape=[1], dtype=tf.int32, name='reward_input')
 
     @classmethod
     def from_config(cls, config):
@@ -31,7 +37,7 @@ class A3C(object):
     def learn(self, domnet):
         assert (not domnet is None), "Expected domnet object to not be None, got: {}".format(domnet)
         logging.debug("Started A3C learner")
-        self.opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+        self.opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate, beta_1=self.momentum)
         self.domnet = domnet
         self.betadom = domnet.betadom
         self.n_workers = self.betadom.n
@@ -44,13 +50,18 @@ class A3C(object):
             t.start()
             self.thread_list.append(t)
         self.update_thread = threading.Thread(target=self.update_weights, args=())
+        # self.update_thread.start()
 
     def update_weights(self):
-        while True:
-            grad_updates = self.grad_queue.get()
-            assert "policy" in updates, "Expected to get updates for policy weights, but got {}".format(updates)
-            assert "value" in updates, "Expected to get updates for value weights, but got {}".format(updates)
-            self.domnet.model.apply_grads(grad_updates)
+        try:
+            while True:
+                grad_updates = self.grad_queue.get()
+                grad_updates = utils.clip_gradient(grad_updates, self.clip_grad)
+                grad_updates = zip(grad_updates, self.domnet.model.trainable_variables)
+                print(grad_updates)
+                self.opt.apply_gradients(grad_updates)
+        except:
+            self.close()
 
     def close(self):
         main_thread = threading.currentThread()
@@ -65,8 +76,7 @@ class A3C(object):
         self.betadom.close()
         logging.debug("Closing A3C master")
 
-    def runner(self, index, episode_max_length=100, max_step_count=1e6):
-        # model = load_model
+    def runner(self, index, episode_max_length=10, max_step_count=1e6):
         t,t_s = 0,0
         while True:
             # noise before running a new episode
@@ -82,37 +92,42 @@ class A3C(object):
             done,value = False, None
 
             # synchoronize model from master
-            model = self.domnet.get_runner_instance()
+            # model = self.domnet.get_runner_instance()
 
-            # run episode for max_length time steps
-            while (not done) and t - t_s < episode_max_length:
-                state,value_log[t],action,action_log_prob_log[t] = self.domnet.step_runner(index, obs, model)
-                obs, reward_log[t], done, info = self.betadom.step_runner(index, action)
-                with self.queue_lock:
-                    self.T += 1
-                t+=1
+            with tf.GradientTape() as tape:
+                # run episode for max_length time steps
+                while (not done) and t - t_s < episode_max_length:
+                    state, value_log[t], action,action_log_prob_log[t] = self.domnet.step_runner(index, obs)
+                    obs, reward_log[t], done, info = self.betadom.step_runner(index, action)
+                    with self.queue_lock:
+                        self.T += 1
+                    t+=1
 
-            # Accumulate gradients from this run
-            bootstrap_value = tf.constant(0.)
-            if not done:
-                boostrap_value = value
-            for i in range(t, t_s, -1):
-                bootstrap_value = (self.gamma*boostrap_value) + reward_log[i]
-                loss_policy = action_log_prob_log[i]*(tf.stop_gradient(bootstrap_value) - value_dict[i])
-                grad_value = tf.square(tf.stop_gradient(bootstrap_value) - value_dict[i])
-                if grads_policy is None: grads_policy = grad_policy
-                else: grads_policy += grad_policy
-                if grads_value is None: grads_value = grad_value
-                else: grads_value += grad_value
+                # Accumulate gradients from this run
+                bootstrap_value = tf.constant(0.)
+                val = action_log_prob_log[t-1]*(tf.constant(reward_log[t-1]) - value_log[t-1])
+                if not done:
+                    bootstrap_value = tf.stop_gradient(value_log[t-1])
+                for i in range(t-1, t_s-1, -1):
+                    bootstrap_value = (self.gamma*bootstrap_value) + tf.constant(reward_log[i])
+                    loss_policy = action_log_prob_log[i]*(bootstrap_value - value_log[i])
+                    loss_value = tf.square(tf.stop_gradient(bootstrap_value) - value_log[i])
+                    if grads_policy is None: grads_policy = loss_policy
+                    else: grads_policy += loss_policy
+                    if grads_value is None: grads_value = loss_value
+                    else: grads_value += loss_value
+                loss = grads_policy + grads_value
 
-            grad_update = self.opt.get_gradients(grads_value + grads_policy,
-                    model.trainable_weights)
-
+            grad_update = tape.gradient(loss, self.domnet.model.trainable_weights)
+            # grad_updates = utils.clip_by_value(grad_update, self.clip_grad)
+            grad_updates = zip(grad_update, self.domnet.model.trainable_weights)
+            print(grad_updates)
+            self.opt.apply_gradients(grad_updates)
             # push gradients to a queue which updates them
             # exit if kill flag is set
-            with self.queue_lock:
-                self.grad_queue.put(grad_update, block=False)
-                if self.kill_flags[index]: return
+            # with self.queue_lock:
+            #     self.grad_queue.put(grad_update, block=False)
+            #     if self.kill_flags[index]: return
 
 if __name__ == "__main__":
     a3c = A3C()

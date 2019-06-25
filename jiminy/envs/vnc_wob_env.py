@@ -70,8 +70,12 @@ class SeleniumWoBEnv(DummyVNCEnv):
         return obs
 
     def _reset_runner(self, index):
-        self._step_runner(index, self.action_space.sample())
-        obs, _, _, _ = self._step_runner(index, self.action_space.sample())
+        self.web_driver_list[index].loadPage(self.remotes[index])
+        action = self.action_space.sample()
+        action.buttonmask = 1
+        self._step_runner(index, action)
+        action.buttonmask = 0
+        obs, _, _, _ = self._step_runner(index, action)
         return obs
 
     def step_runner(self, index, action):

@@ -2,8 +2,10 @@ from jiminy.representation.structure import betaDOM
 from jiminy.spaces import vnc_event
 from jiminy.envs import SeleniumWoBEnv
 import tensorflow as tf
+# tf.enable_eager_execution()
 import numpy as np
 import utils
+import os
 from a3c import A3C
 
 from file_initializer import FileInitializer
@@ -32,9 +34,11 @@ class BetaDOMNet(object):
             word_max_length=15, dom_max_length=15,
             value_function_layers=[64,32,1], value_activations=['tanh', 'tanh', 'sigmoid'],
             policy_function_layers=[64,32,3], policy_activations=['tanh', 'tanh', 'sigmoid'],
+            greedy_epsilon=1e-1,
             word_vectors=np.zeros([1, 128]), name="BetaDOMNet", betadom=None):
         assert (not betadom is None), "BetaDOM can not be null"
         self.betadom = betadom
+        self.greedy_epsilon = greedy_epsilon
         self.name = name
         self.n = self.betadom.n
         self.dom_max_length = dom_max_length
@@ -62,13 +66,13 @@ class BetaDOMNet(object):
 
         # inputs for the model
         # dom_word_input: word label for the dom element
-        self.dom_word_input = tf.keras.layers.Input(shape=[dom_max_length], dtype=tf.int32, name="dom_word_input")
+        self.dom_word_input = tf.keras.Input(shape=[dom_max_length], dtype=tf.int32, name="dom_word_input")
         # dom_shape_input: bounding box
-        self.dom_shape_input = tf.keras.layers.Input(shape=[dom_max_length, 4], dtype=tf.float32, name="bounding_box_input")
+        self.dom_shape_input = tf.keras.Input(shape=[dom_max_length, 4], dtype=tf.float32, name="bounding_box_input")
         # dom_embedding_input: label for the dom element of the element -- driven by objectType in JiminyBaseObject
-        self.dom_embedding_input = tf.keras.layers.Input(shape=[dom_max_length], dtype=tf.int32, name="dom_tag_input")
+        self.dom_embedding_input = tf.keras.Input(shape=[dom_max_length], dtype=tf.int32, name="dom_tag_input")
         # instruction_word_input:
-        self.instruction_word_input = tf.keras.layers.Input(shape=[word_max_length], dtype=tf.int32, name="instruction_words")
+        self.instruction_word_input = tf.keras.Input(shape=[word_max_length], dtype=tf.int32, name="instruction_words")
 
         ################################ Bringing together the model #####################################
         dom_word_embedding = self.word_embedding_layer(self.dom_word_input)
@@ -100,6 +104,7 @@ class BetaDOMNet(object):
 
         self.model = tf.keras.Model(inputs=[self.dom_word_input, self.dom_shape_input, self.dom_embedding_input, self.instruction_word_input],
                 outputs=[value, [policy_x, policy_y, policy_b]])
+        self.model.run_eagerly = True
         tf.keras.utils.plot_model(self.model, 'model.png', show_shapes=True)
 
 
@@ -160,12 +165,12 @@ class BetaDOMNet(object):
         # implements the policy, -- which is greedy for us
         # TODO(prannayk) : change this to epsilon greedy
         ru = np.random.uniform()
-        sample = self.betadom.action_space.sample()
+        sample = self.betadom.env.action_space.sample()
         x,y,bm = sample.x, sample.y, sample.buttonmask
         if ru > self.greedy_epsilon:
-            x,y,bm = np.argmax(tf.squeeze(policy_raw[0])),
-                 np.argmax(tf.squeeze(policy_raw[1])),
-                 np.argmax(tf.squeeze(policy_raw[2]))
+            x,y,bm = np.argmax(tf.squeeze(policy_raw[0])), \
+                    np.argmax(tf.squeeze(policy_raw[1])), \
+                    np.argmax(tf.squeeze(policy_raw[2]))
         return utils.get_action_probability_pair(x,y,bm,policy_raw)
 
     def step_instance_input(self, bi):
@@ -186,7 +191,7 @@ class BetaDOMNet(object):
                     for obj in clickable_object_list]),
                 self.dom_max_length, axis=0)
         model_input = [tag_text_input, tag_bounding_box, tag_input, instruction_input]
-        model_input = [np.expand_dims(arr, 0) for arr in model_input]
+        model_input = [tf.convert_to_tensor(np.expand_dims(arr, 0)) for arr in model_input]
         return model_input
 
     def get_runner_instance(self):
@@ -194,7 +199,7 @@ class BetaDOMNet(object):
 
 if __name__ == "__main__":
     wobenv = SeleniumWoBEnv()
-    wobenv.configure(_n=1, remotes=["file:///Users/prannayk/ongoing_projects/jiminy-project/miniwob-plusplus/html/miniwob/click-button.html"])
+    wobenv.configure(_n=1, remotes=["file:///{}/miniwob-plusplus/html/miniwob/click-button.html".format(os.getenv("JIMINY_ROOT"))])
     betadom = betaDOM(wobenv)
     obs = betadom.reset()
     b = BetaDOMNet(betadom=betadom,
