@@ -29,3 +29,10 @@ def load_lines_ff(fname):
         lines = f.readlines()
     lines = [line.strip() for line in lines]
     return lines
+
+def get_action_probability_pair(x,y,bm,probs):
+    action_log_prob = np.log(tf.squeeze(probs[0])[x]) + \
+        np.log(tf.squeeze(probs[1])[y]) + \
+        np.log(tf.squeeze(probs[2])[bm])
+    return vnc_event.PointerEvent(x+1, y+1, bm), action_log_prob
+

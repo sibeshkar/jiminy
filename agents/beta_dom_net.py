@@ -1,8 +1,10 @@
 from jiminy.representation.structure import betaDOM
+from jiminy.spaces import vnc_event
 from jiminy.envs import SeleniumWoBEnv
 import tensorflow as tf
 import numpy as np
 import utils
+from a3c import A3C
 
 from file_initializer import FileInitializer
 
@@ -124,9 +126,10 @@ class BetaDOMNet(object):
         if model is None:
             model = self.model
         betadom_instance = self.betadom.observation_runner(index, obs)
-        model_input = self.instance_input(betadom_instance)
+        model_input = self.step_instance_input(betadom_instance)
         value, policy = model(model_input)
-        return betadom_instance, value[0], step_policy(policy)[0]
+        action, action_log_prob = self.step_policy(policy)
+        return betadom_instance, value[0], action, action_log_prob
 
     def step(self, obs, model=None):
         if model is None:
@@ -141,15 +144,29 @@ class BetaDOMNet(object):
         model_input = [np.concatenate([model_input_list[j][i] for j in range(self.n)],
             axis=0) for i in range(4)]
         value, policy = model(model_input)
-        return value, [step_policy(pol) for pol in policy]
+        action_list = []
+        action_log_prob_list = []
+        for i in range(self.betadom.n):
+            action, action_log_prob = self.step_policy([
+                policy[0][i],
+                policy[1][i],
+                policy[2][i]
+                ])
+            action_list.append(action)
+            action_log_prob_list.append(action_log_prob)
+        return self.betadom.betadom_instance_list, value, action_list, action_log_prob_list
 
     def step_policy(self, policy_raw):
         # implements the policy, -- which is greedy for us
         # TODO(prannayk) : change this to epsilon greedy
-        return [vnc_event.PointerEvent(
-            np.argmax(policy_instance[0]),
-            np.argmax(policy_instance[1]),
-            np.argmax(policy_instance[2])) for policy_instance in policy_raw]
+        ru = np.random.uniform()
+        sample = self.betadom.action_space.sample()
+        x,y,bm = sample.x, sample.y, sample.buttonmask
+        if ru > self.greedy_epsilon:
+            x,y,bm = np.argmax(tf.squeeze(policy_raw[0])),
+                 np.argmax(tf.squeeze(policy_raw[1])),
+                 np.argmax(tf.squeeze(policy_raw[2]))
+        return utils.get_action_probability_pair(x,y,bm,policy_raw)
 
     def step_instance_input(self, bi):
         instruction = utils.process_text(self.betadom.betadom_instance_list[0].query.innerText)
@@ -172,6 +189,9 @@ class BetaDOMNet(object):
         model_input = [np.expand_dims(arr, 0) for arr in model_input]
         return model_input
 
+    def get_runner_instance(self):
+        return tf.keras.models.clone_model(self.model)
+
 if __name__ == "__main__":
     wobenv = SeleniumWoBEnv()
     wobenv.configure(_n=1, remotes=["file:///Users/prannayk/ongoing_projects/jiminy-project/miniwob-plusplus/html/miniwob/click-button.html"])
@@ -179,5 +199,5 @@ if __name__ == "__main__":
     obs = betadom.reset()
     b = BetaDOMNet(betadom=betadom,
             word_dict=utils.load_lines_ff("config/word_list.txt"))
-    print(b.step(obs, b.model))
-    wobenv.close()
+    a3c = A3C()
+    a3c.learn(b)

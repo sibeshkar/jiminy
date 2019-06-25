@@ -60,6 +60,12 @@ class betaDOM(vectorized.ObservationWrapper):
         for instance in self.betadom_instance_list: strval += (instance.__str__() + "\n")
         return strval[:-1]
 
+    def _close(self):
+        self.env.close()
+
+    def _step_runner(self, index, action):
+        return self.env.step_runner(index, action)
+
 if __name__ == "__main__":
     wobenv = SeleniumWoBEnv()
     wobenv.configure(_n=1, remotes=["file:///Users/prannayk/ongoing_projects/jiminy-project/miniwob-plusplus/html/miniwob/click-button.html"])

@@ -77,8 +77,8 @@ class SeleniumWoBEnv(DummyVNCEnv):
     def step_runner(self, index, action):
         return self._step_runner(index, action)
 
-    def _step_runner(self, index, action)
-        self._action_impl(self.web_driver_list[index], action_n[index])
+    def _step_runner(self, index, action):
+        self._action_impl(self.web_driver_list[index], action)
         reward = self._reward(self.web_driver_list[index])
         done = self._get_env_data(self.web_driver_list[index])['done']
         return self.web_driver_list[index], reward, done, {}

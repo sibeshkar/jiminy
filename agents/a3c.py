@@ -28,13 +28,13 @@ class A3C(object):
             learning_rate=config["learning_rate"], entropy_beta=config["entropy_beta"],
             clip_grad=config["clip_grad"], logdir=config["logdir"])
 
-    def learn(self, betadom, domnet, n=1):
-        assert (not betadom is None), "Expected betadom object to not be None, got: {}".format(betadom)
+    def learn(self, domnet):
         assert (not domnet is None), "Expected domnet object to not be None, got: {}".format(domnet)
         logging.debug("Started A3C learner")
         self.opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-        self.betadom = betadom
-        self.n_workers = n
+        self.domnet = domnet
+        self.betadom = domnet.betadom
+        self.n_workers = self.betadom.n
         self.T = 0
         self.kill_flags = [False for _ in range(self.n_workers)]
         self.thread_list = []
@@ -62,6 +62,7 @@ class A3C(object):
             t.join()
         self.update_thread.join()
         domnet.save(self.logdir)
+        self.betadom.close()
         logging.debug("Closing A3C master")
 
     def runner(self, index, episode_max_length=100, max_step_count=1e6):
@@ -71,6 +72,7 @@ class A3C(object):
             # noise before running a new episode
             reward_log = dict()
             value_log = dict()
+            action_log_prob_log = dict()
             grads_value, grads_policy = None, None
             with self.queue_lock:
                 # exit if the process has run for maximum number of episodes
@@ -83,29 +85,27 @@ class A3C(object):
             model = self.domnet.get_runner_instance()
 
             # run episode for max_length time steps
-            while (not done) and t - t_s == episode_max_length:
-                state,value,action,action_log_prob = domnet.step_runner(index, obs, model)
-                obs, reward, done, info = self.betadom.step_runner(index, action)
-                reward_log[t] = reward
-                value_log[t] = value
+            while (not done) and t - t_s < episode_max_length:
+                state,value_log[t],action,action_log_prob_log[t] = self.domnet.step_runner(index, obs, model)
+                obs, reward_log[t], done, info = self.betadom.step_runner(index, action)
                 with self.queue_lock:
                     self.T += 1
                 t+=1
 
             # Accumulate gradients from this run
-            bootstrap_value = tf.Constants(0.)
+            bootstrap_value = tf.constant(0.)
             if not done:
                 boostrap_value = value
             for i in range(t, t_s, -1):
                 bootstrap_value = (self.gamma*boostrap_value) + reward_log[i]
-                loss_policy = action_log_prob*(tf.stop_gradient(bootstrap_value) - value_dict[t])
-                grad_value = tf.square(tf.stop_gradient(bootstrap_value) - value_dict[t])
+                loss_policy = action_log_prob_log[i]*(tf.stop_gradient(bootstrap_value) - value_dict[i])
+                grad_value = tf.square(tf.stop_gradient(bootstrap_value) - value_dict[i])
                 if grads_policy is None: grads_policy = grad_policy
                 else: grads_policy += grad_policy
                 if grads_value is None: grads_value = grad_value
                 else: grads_value += grad_value
 
-            grad_update = self.opt.compute_gradients(grads_value + grads_policy,
+            grad_update = self.opt.get_gradients(grads_value + grads_policy,
                     model.trainable_weights)
 
             # push gradients to a queue which updates them
@@ -113,3 +113,6 @@ class A3C(object):
             with self.queue_lock:
                 self.grad_queue.put(grad_update, block=False)
                 if self.kill_flags[index]: return
+
+if __name__ == "__main__":
+    a3c = A3C()
