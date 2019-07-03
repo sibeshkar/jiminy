@@ -1,1 +1,0 @@
-wob.mini.TicTacToe-v0
