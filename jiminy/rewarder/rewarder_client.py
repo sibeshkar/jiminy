@@ -142,8 +142,8 @@ class RewarderClient(websocket.WebSocketClientProtocol):
             #print("Reward response is", response) ##Temporary debug
             pyprofile.incr('rewarder_client.reward', reward)
             if done:
-                pyprofile.incr('rewarder_client.done')
-            self.reward_buffer.push(episode_id, reward, done, {})
+                pyprofile.incr('rewarder_client.done') 
+            self.reward_buffer.push(episode_id, reward, done, {}) #TODO: Blank info needs to be fixed
             #self.reward_buffer.push(episode_id, reward, done, info) Temporary debug
         elif method == 'v0.env.text':
             episode_id = headers['episode_id']
