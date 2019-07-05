@@ -6,6 +6,7 @@ import jiminy.utils as utils
 from datetime import datetime
 import json
 import threading
+import multiprocessing
 
 arg_parser = argparse.ArgumentParser(description="Data recorder for Selenium to betaDOM")
 arg_parser.add_argument('--logdir', dest='logdir', action='store',
@@ -13,7 +14,7 @@ arg_parser.add_argument('--logdir', dest='logdir', action='store',
 arg_parser.add_argument('--task_list', dest='task_list', action='store',
         default='task_list.txt', help="Choose the file name containing the task_list to be used with Data recorder")
 arg_parser.add_argument('--num_examples', dest='num_examples', action='store',
-        default=100, help="Choose the number of examples to record")
+        default=100000, help="Choose the number of examples to record")
 
 args = arg_parser.parse_args()
 
@@ -24,6 +25,10 @@ if __name__ == "__main__":
 
     assert os.path.exists(args.task_list), "Task list could not be loaded from {}".format(args.task_list)
     tasks = utils.get_lines_ff(args.task_list)
+    cpu_count = multiprocessing.cpu_count()
+    print("Using {} CPU cores".format(cpu_count))
+    while len(tasks) < cpu_count:
+        tasks += tasks
 
     jiminy_home = os.getenv("JIMINY_ROOT")
     prefix = "file:///{}/miniwob-plusplus/html/miniwob/".format(jiminy_home)
@@ -42,6 +47,7 @@ if __name__ == "__main__":
             fname = args.logdir + "/" + datetime.now().strftime("%Y%m%d-%H%M%S%f") + ".json"
             with open(fname, mode="w") as f:
                 json.dump(jsonstring, f)
+            print("Written ... {}".format(fname))
 
     thread_list = []
     for i in range(n):
