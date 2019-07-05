@@ -1,0 +1,4 @@
+click-button
+click-checkboxes-large
+click-checkboxes
+click-checkboxes-soft

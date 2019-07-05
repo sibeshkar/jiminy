@@ -57,16 +57,7 @@ class SeleniumWoBEnv(DummyVNCEnv):
         self.started = True
 
     def _reset(self):
-        action_list = []
-        for i in range(self.n):
-            action_list.append(self.action_space.sample())
-            action_list[-1].buttonmask = 1
-        self._step(action_list)
-        action_list = []
-        for i in range(self.n):
-            action_list.append(self.action_space.sample())
-            action_list[-1].buttonmask = 0
-        obs, _, _, _ = self._step(action_list)
+        obs = [self._reset_runner(index) for index in range(self.n)]
         return obs
 
     def _reset_runner(self, index):

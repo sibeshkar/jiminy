@@ -20,3 +20,4 @@ utils/nohup.out
 examples/completed-demos
 *.log
 *.png
+*.json

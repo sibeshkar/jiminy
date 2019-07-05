@@ -6,7 +6,11 @@ from jiminy.gym import Space
 
 def getLabelForInput(inputObject, webdriver):
     name = inputObject.get_attribute("name")
-    labelObject = webdriver.find_element_by_xpath("//label[@for=({})]".format(name))
+    labelObject = None
+    if name == "" or name is None:
+        labelObject = webdriver.find_element_by_xpath("//input[@id='{}']//parent::label".format(inputObject.get_attribute("id")))
+    else:
+        labelObject = webdriver.find_element_by_xpath("//label[@for=({})]".format(name))
     return labelObject
 
 def getInnerText(inputObject, webdriver):
@@ -28,7 +32,7 @@ def getBoundingBoxCoords(objectInContext, webdriver):
     location['x_2'] = objectInContext.location['x'] + objectInContext.size['width']
     location['y_2'] = objectInContext.location['y'] + objectInContext.size['height']
     if objectInContext.tag_name == "input" and objectInContext.get_attribute("type") in ["checkbox", "radio"]:
-        objectLabel = getLabelForInput(objectInContext)
+        objectLabel = getLabelForInput(objectInContext, webdriver)
         labelLocation = getBoundingBoxCoords(objectLabel, webdriver)
         location = combineLocations(location, labelLocation)
     return location
@@ -41,10 +45,10 @@ def combineLocations(location, labelLocation):
     return location
 
 def saveScreenToFile(seleniumWebDriver):
-    DIRNAME = os.getenv("DATADUMPDIR")
+    DIRNAME = os.getenv("JIMINY_LOGDIR")
     if DIRNAME is None:
         DIRNAME = "./"
-    fileString = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    fileString = datetime.datetime.now().strftime("%Y%m%d-%H%M%S%f")
     saveString = "{}/{}.png".format(DIRNAME, fileString)
     seleniumWebDriver.get_screenshot_as_file(saveString)
     img = cv2.imread(saveString, 0)

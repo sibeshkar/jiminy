@@ -54,6 +54,9 @@ class betaDOM(vectorized.ObservationWrapper):
         self.betadom_instance_list[i].observation(obs)
         return self.betadom_instance_list[i]
 
+    def _reset_runner(self, index):
+        return self.env.reset_runner(index)
+
     def _reset(self):
         return self.env.reset()
 
