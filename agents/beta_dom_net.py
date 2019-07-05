@@ -2,7 +2,7 @@ from jiminy.representation.structure import betaDOM
 from jiminy.spaces import vnc_event
 from jiminy.envs import SeleniumWoBEnv
 import tensorflow as tf
-# tf.enable_eager_execution()
+tf.enable_eager_execution()
 import numpy as np
 import utils
 import os
@@ -10,8 +10,16 @@ from a3c import A3C
 
 from file_initializer import FileInitializer
 
+def convert_to_tf_dtype(dtype):
+    if dtype == np.float32 or np.float64:
+        return tf.float32
+    if dtype == np.int32 or np.int64:
+        return tf.int64
+    return tf.float32
+
 class Vocabulary(object):
     def __init__(self, objectlist):
+        objectlist += ['NONE']
         self.key2sym = dict()
         self.sym2key = dict()
         for i, obj in enumerate(objectlist):
@@ -22,9 +30,11 @@ class Vocabulary(object):
     def to_sym(self, entity_list):
         indices = np.zeros([len(entity_list)])
         for i, entity in enumerate(entity_list):
-            assert entity in self.key2sym, "Key {} not found in Vocabulary".format(entity)
-            indices[i] = self.key2sym[entity]
-        indices = indices.astype(np.int32)
+            if not entity in self.key2sym:
+                indices[i] = self.key2sym['NONE']
+            else:
+               indices[i] = self.key2sym[entity]
+        indices = indices.astype(np.int64)
         return indices
 
 
@@ -132,6 +142,8 @@ class BetaDOMNet(object):
             model = self.model
         betadom_instance = self.betadom.observation_runner(index, obs)
         model_input = self.step_instance_input(betadom_instance)
+        if model_input is None:
+            return betadom_instance, None, None, None
         value, policy = model(model_input)
         action, action_log_prob = self.step_policy(policy)
         return betadom_instance, value[0], action, action_log_prob
@@ -143,7 +155,7 @@ class BetaDOMNet(object):
         model_input_list = []
         for i in range(self.n):
             model_input = self.step_instance_input(
-                    self.betadom.betadom_instance_list[i])
+                    betadom_instance)
             model_input_list.append(model_input)
         assert len(model_input_list) == self.n, "Expected model_input_list to be of size {} but got {} : {}".format(self.n, len(model_input_list), model_input_list)
         model_input = [np.concatenate([model_input_list[j][i] for j in range(self.n)],
@@ -162,22 +174,23 @@ class BetaDOMNet(object):
         return self.betadom.betadom_instance_list, value, action_list, action_log_prob_list
 
     def step_policy(self, policy_raw):
-        # implements the policy, -- which is greedy for us
-        # TODO(prannayk) : change this to epsilon greedy
         ru = np.random.uniform()
         sample = self.betadom.env.action_space.sample()
         x,y,bm = sample.x, sample.y, sample.buttonmask
         if ru > self.greedy_epsilon:
-            x,y,bm = np.argmax(tf.squeeze(policy_raw[0])), \
-                    np.argmax(tf.squeeze(policy_raw[1])), \
-                    np.argmax(tf.squeeze(policy_raw[2]))
+            x,y = np.argmax(tf.squeeze(policy_raw[0])), \
+                    np.argmax(tf.squeeze(policy_raw[1])), # \
+#                    np.argmax(tf.squeeze(policy_raw[2]))
         return utils.get_action_probability_pair(x,y,bm,policy_raw)
 
-    def step_instance_input(self, bi):
-        instruction = utils.process_text(self.betadom.betadom_instance_list[0].query.innerText)
-        instruction_input = self.word_dict.to_sym(instruction)
+    def step_instance_input(self, betadom_instance):
+        instruction = utils.process_text(betadom_instance.query.innerText)
+        instruction_input = utils.pad(self.word_dict.to_sym(instruction),
+                self.word_max_length, axis=0)
         clickable_object_list = [obj for obj in filter(lambda x: x.objectType == 'click',
-            self.betadom.betadom_instance_list[0].objectList)]
+            betadom_instance.objectList)]
+        if len(clickable_object_list) == 0:
+            return None
         tag_input = utils.pad(
                 self.dom_embedding_vocab.to_sym([obj.objectType
                     for obj in clickable_object_list]),
@@ -191,7 +204,8 @@ class BetaDOMNet(object):
                     for obj in clickable_object_list]),
                 self.dom_max_length, axis=0)
         model_input = [tag_text_input, tag_bounding_box, tag_input, instruction_input]
-        model_input = [tf.convert_to_tensor(np.expand_dims(arr, 0)) for arr in model_input]
+        model_input = [tf.convert_to_tensor(np.expand_dims(arr, 0), convert_to_tf_dtype(arr.dtype)) for arr in model_input]
+        print([inp.shape.as_list() for inp in model_input])
         return model_input
 
     def get_runner_instance(self):
@@ -203,6 +217,7 @@ if __name__ == "__main__":
     betadom = betaDOM(wobenv)
     obs = betadom.reset()
     b = BetaDOMNet(betadom=betadom,
-            word_dict=utils.load_lines_ff("config/word_list.txt"))
+            word_dict=utils.load_lines_ff("config/word_list.txt"),
+            greedy_epsilon=0.4)
     a3c = A3C()
     a3c.learn(b)

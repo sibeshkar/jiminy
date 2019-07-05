@@ -10,7 +10,7 @@ class A3C(object):
     def __init__(self,
             gamma=0.99,
             momentum=0.999,
-            learning_rate=1e-4,
+            learning_rate=1e-3,
             entropy_beta=1e-3,
             clip_grad=40.,
             logdir='./logs/a2c'):
@@ -50,15 +50,12 @@ class A3C(object):
             t.start()
             self.thread_list.append(t)
         self.update_thread = threading.Thread(target=self.update_weights, args=())
-        # self.update_thread.start()
+        self.update_thread.start()
 
     def update_weights(self):
         try:
             while True:
                 grad_updates = self.grad_queue.get()
-                grad_updates = utils.clip_gradient(grad_updates, self.clip_grad)
-                grad_updates = zip(grad_updates, self.domnet.model.trainable_variables)
-                print(grad_updates)
                 self.opt.apply_gradients(grad_updates)
         except:
             self.close()
@@ -76,7 +73,7 @@ class A3C(object):
         self.betadom.close()
         logging.debug("Closing A3C master")
 
-    def runner(self, index, episode_max_length=10, max_step_count=1e6):
+    def runner(self, index, episode_max_length=100, max_step_count=1e6):
         t,t_s = 0,0
         while True:
             # noise before running a new episode
@@ -97,7 +94,13 @@ class A3C(object):
             with tf.GradientTape() as tape:
                 # run episode for max_length time steps
                 while (not done) and t - t_s < episode_max_length:
-                    state, value_log[t], action,action_log_prob_log[t] = self.domnet.step_runner(index, obs)
+                    state, value, action, action_log_prob = self.domnet.step_runner(index, obs)
+                    if value is None:
+                        continue
+                    value_log[t], action_log_prob_log[t] = value, action_log_prob
+                    action.buttonmask = 1
+                    self.betadom.step_runner(index, action)
+                    action.buttonmask = 0
                     obs, reward_log[t], done, info = self.betadom.step_runner(index, action)
                     with self.queue_lock:
                         self.T += 1
@@ -119,15 +122,13 @@ class A3C(object):
                 loss = grads_policy + grads_value
 
             grad_update = tape.gradient(loss, self.domnet.model.trainable_weights)
-            # grad_updates = utils.clip_by_value(grad_update, self.clip_grad)
             grad_updates = zip(grad_update, self.domnet.model.trainable_weights)
-            print(grad_updates)
-            self.opt.apply_gradients(grad_updates)
+
             # push gradients to a queue which updates them
             # exit if kill flag is set
-            # with self.queue_lock:
-            #     self.grad_queue.put(grad_update, block=False)
-            #     if self.kill_flags[index]: return
+            with self.queue_lock:
+                self.grad_queue.put(grad_updates, block=False)
+                if self.kill_flags[index]: return
 
 if __name__ == "__main__":
     a3c = A3C()

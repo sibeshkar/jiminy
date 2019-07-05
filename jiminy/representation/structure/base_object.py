@@ -34,7 +34,7 @@ class JiminyBaseObject(object):
         jiminyDict['focused'] = self.focused
         jiminyDict['value'] = self.value
         jiminyDict['innerText'] = self.innerText
-        jiminyDict['metadata'] = self.getMetadata()
+        # jiminyDict['metadata'] = self.getMetadata()
         result = json.dumps(jiminyDict)
         return result
 

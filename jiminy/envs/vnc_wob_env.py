@@ -76,6 +76,7 @@ class SeleniumWoBEnv(DummyVNCEnv):
         self._step_runner(index, action)
         action.buttonmask = 0
         obs, _, _, _ = self._step_runner(index, action)
+        time.sleep(1)
         return obs
 
     def step_runner(self, index, action):

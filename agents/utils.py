@@ -22,7 +22,7 @@ def process_text(text):
 
 def pad(vector, length, axis=0):
     pad_width = [(0,0) for _ in range(len(vector.shape))]
-    pad_width[axis] = (0, length)
+    pad_width[axis] = (0, length - vector.shape[axis])
     return np.pad(vector, pad_width, 'constant')
 
 def load_lines_ff(fname):
