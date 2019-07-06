@@ -37,6 +37,7 @@ if __name__ == "__main__":
 
     wobenv = SeleniumWoBEnv()
     wobenv.configure(_n=n, remotes=tasks)
+    print("Started wobenv")
     betadom = betaDOM(wobenv)
 
     def env_runner(index):

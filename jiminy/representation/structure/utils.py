@@ -2,7 +2,7 @@ import os
 import cv2
 import datetime
 import numpy as np
-from jiminy.gym import Space
+# from jiminy.gym import Space
 
 def getLabelForInput(inputObject, webdriver):
     name = inputObject.get_attribute("name")
@@ -85,3 +85,37 @@ def getObjectType(seleniumObject):
         return "input"
     if seleniumObject.tag_name == "p" or seleniumObject.tag_name == "div":
         return "text"
+
+def contains(ob, obj):
+    if ob == obj:
+        return False
+    count = 0
+    if ob.boundingBox["x_1"] <= obj.boundingBox["x_1"]:
+        count+=1
+    if ob.boundingBox["y_1"] <= obj.boundingBox["y_1"]:
+        count+=1
+    if ob.boundingBox["x_2"] >= obj.boundingBox["x_2"]:
+        count+=1
+    if ob.boundingBox["y_2"] >= obj.boundingBox["y_2"]:
+        count+=1
+    if count == 4:
+        return True
+
+def is_ancestor(obj, objectList):
+    for ob in objectList:
+        if contains(ob, obj):
+            return True
+    return False
+
+def remove_ancestors(objectList):
+    size_old = len(objectList) + 1
+    size = len(objectList)
+    while size < size_old:
+        objectList_n = []
+        for obj in objectList:
+            if is_ancestor(obj, objectList):
+                continue
+            objectList_n.append(obj)
+        objectList = objectList_n
+        size, size_old = len(objectList), size
+    return objectList

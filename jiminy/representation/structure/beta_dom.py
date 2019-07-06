@@ -1,12 +1,13 @@
 from jiminy.vectorized.core import Env
-import time
+# import time
 # from jiminy.wrappers.experimental import RepresentationWrapper
 from jiminy import vectorized
 from jiminy.representation.structure import utils, JiminyBaseObject
 from jiminy.utils.webloader import WebLoader
 from jiminy.envs import SeleniumWoBEnv
-from jiminy.spaces import vnc_event
+# from jiminy.spaces import vnc_event
 import os
+import numpy as np
 
 class betaDOMInstance(vectorized.ObservationWrapper):
     def __init__(self, screen_shape=(300, 300)):
@@ -23,6 +24,7 @@ class betaDOMInstance(vectorized.ObservationWrapper):
             self.pixels = utils.getPixelsFromFile(fname)
             self.objectList = [JiminyBaseObject(betaDOM=self, seleniumDriver=obs.driver, seleniumObject=obj)
                     for obj in obs.getRawObjectList(screen_shape=(300,300))]
+            self.objectList = utils.remove_ancestors(self.objectList)
             self.query = JiminyBaseObject(betaDOM=self, seleniumDriver=obs.driver, seleniumObject=obs.getInstructionFields())
         elif isinstance(self, np.array):
             """
