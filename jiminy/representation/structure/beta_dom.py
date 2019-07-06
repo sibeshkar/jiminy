@@ -35,7 +35,7 @@ class betaDOMInstance(vectorized.ObservationWrapper):
     def __str__(self):
         jsonstring = "{{\n \"screenshot_img_path\": \"{}\",\n".format(self.flist[-1])
         jsonstring += "\"base_object_list\" : ["
-        jsonstring += ",\n".join([str(obj) for obj in (self.objectList + [self.query])])
+        jsonstring += ",\n".join([str(obj) for obj in self.objectList])
         jsonstring += "\n]\n}"
         return jsonstring
 
@@ -77,7 +77,7 @@ class betaDOM(vectorized.ObservationWrapper):
 if __name__ == "__main__":
     wobenv = SeleniumWoBEnv()
     jiminy_home = os.getenv("JIMINY_ROOT")
-    wobenv.configure(_n=1, remotes=["file:///{}/miniwob-plusplus/html/miniwob/click-button.html".format(jiminy_home)])
+    wobenv.configure(_n=1, remotes=["file:///{}/miniwob-plusplus/html/miniwob/click-checkboxes.html".format(jiminy_home)])
     betadom = betaDOM(wobenv)
     obs = betadom.reset()
     betadom.observation(obs)

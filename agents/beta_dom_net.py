@@ -1,6 +1,7 @@
 from jiminy.representation.structure import betaDOM
 from jiminy.spaces import vnc_event
 from jiminy.envs import SeleniumWoBEnv
+from jiminy.utils.ml import Vocabulary
 import tensorflow as tf
 tf.enable_eager_execution()
 import numpy as np
@@ -16,27 +17,6 @@ def convert_to_tf_dtype(dtype):
     if dtype == np.int32 or np.int64:
         return tf.int64
     return tf.float32
-
-class Vocabulary(object):
-    def __init__(self, objectlist):
-        objectlist += ['NONE']
-        self.key2sym = dict()
-        self.sym2key = dict()
-        for i, obj in enumerate(objectlist):
-            self.key2sym[obj] = i
-            self.sym2key[i] = obj
-        self.length = len(objectlist)
-
-    def to_sym(self, entity_list):
-        indices = np.zeros([len(entity_list)])
-        for i, entity in enumerate(entity_list):
-            if not entity in self.key2sym:
-                indices[i] = self.key2sym['NONE']
-            else:
-               indices[i] = self.key2sym[entity]
-        indices = indices.astype(np.int64)
-        return indices
-
 
 class BetaDOMNet(object):
     def __init__(self, dom_embedding_size=128,
