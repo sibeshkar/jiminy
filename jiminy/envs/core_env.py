@@ -445,7 +445,7 @@ class CoreVNCEnv(vectorized.Env):
             else:
                 info_n[i]['error'] = 'VNC session failed: {}'.format(vnc_err)
 
-            extra_logger.info('[%s] %s', self.connection_names[i], info_n[i]['error'])
+            #extra_logger.info('[%s] %s', self.connection_names[i], info_n[i]['error'])
 
             if self.allow_reconnect:
                 logger.info('[%s] Making a call to the allocator to replace crashed index: %s', self.connection_names[i], info_n[i]['error'])
