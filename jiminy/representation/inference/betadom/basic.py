@@ -66,13 +66,26 @@ class BaseModel():
         self.model = tf.keras.Model(inputs=[self.image_input, self.tag_input],
                 outputs=[tag_bounding_box, tag_output])
 
+    def forward_pass(self, img):
+        img_data = np.array(img).astype(np.float32).reshape([1] + list(self.screen_shape))
+        target_data = np.array([0 for _ in range(self.max_length)]).reshape((1, self.max_length))
+        object_list = []
+        multiplier = list(self.screen_shape) + list(self.screen_shape)
+
+        while not is_done:
+            softmax, bb = self.model([img_data, target_data])
+            bb = bb.numpy() * multiplier
+            object_type_list.append((np.argmax(softmax.numpy()), bb))
+
+        return []
+
 if __name__ == "__main__":
     baseModel = BaseModel(screen_shape=(300,300))
     baseModel.create_model()
     print(baseModel.model.summary())
 
     vocab = Vocabulary(["text","input", "checkbox", "button", "click"])
-    dataset = create_dataset("logdir", 32, vocab, 10, (300, 300,3))
+    dataset = create_dataset("logdir", 32, vocab, baseModel.max_length, tuple(baseModel.screen_shape + [3])
 
     for (img, prev_tags, _) in dataset.take(4):
         img = tf.cast(img, dtype=tf.float32)

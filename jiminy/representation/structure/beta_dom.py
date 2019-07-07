@@ -5,9 +5,11 @@ from jiminy import vectorized
 from jiminy.representation.structure import utils, JiminyBaseObject
 from jiminy.utils.webloader import WebLoader
 from jiminy.envs import SeleniumWoBEnv
-# from jiminy.spaces import vnc_event
+from jiminy.representation.inference.betadom import BaseModel
 import os
 import numpy as np
+import time
+import threading
 
 class betaDOMInstance(vectorized.ObservationWrapper):
     def __init__(self, screen_shape=(300, 300)):
@@ -15,6 +17,20 @@ class betaDOMInstance(vectorized.ObservationWrapper):
         self.pixels = None
         self.flist = []
         self.screen_shape = screen_shape
+        self.lock_queue = threading.Lock()
+        self.frame_queue = queue.Queue()
+        self.fp_thread = threading.Thread(target=self.frame_processor, args=())
+        self.fp_thread.start()
+        self.die = False
+        self.model = BaseModel
+
+    def frame_processor(self):
+        i = 0
+        while not self.die:
+            frame = self.frame_queue.get()
+            if i % 10 == 0:
+                self.objectList = self.model.forward_pass(frame)
+
     def _observation(self, obs):
         if isinstance(obs, WebLoader):
             fname = utils.saveScreenToFile(obs.driver)
@@ -26,11 +42,9 @@ class betaDOMInstance(vectorized.ObservationWrapper):
                     for obj in obs.getRawObjectList(screen_shape=(300,300))]
             self.objectList = utils.remove_ancestors(self.objectList)
             self.query = JiminyBaseObject(betaDOM=self, seleniumDriver=obs.driver, seleniumObject=obs.getInstructionFields())
-        elif isinstance(self, np.array):
-            """
-            TODO: build this
-            """
-            raise NotImplementedError
+        elif isinstance(obs, np.array):
+            with self.lock_queue:
+                self.frame_queue.put(obs)
 
     def __str__(self):
         jsonstring = "{{\n \"screenshot_img_path\": \"{}\",\n".format(self.flist[-1])
@@ -38,6 +52,11 @@ class betaDOMInstance(vectorized.ObservationWrapper):
         jsonstring += ",\n".join([str(obj) for obj in self.objectList])
         jsonstring += "\n]\n}"
         return jsonstring
+
+    def close(self):
+        with self.frame_queue:
+            self.die = True
+        self.fp_thread.join()
 
 class betaDOM(vectorized.ObservationWrapper):
     """
