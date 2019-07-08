@@ -1,6 +1,8 @@
 """
 Vocabulary object for use with enttity <-> vector representations
 """
+import numpy as np
+import json
 
 class Vocabulary(object):
     def __init__(self, objectlist):
@@ -11,7 +13,7 @@ class Vocabulary(object):
             self.key2sym[obj] = i
             self.sym2key[i] = obj
         self.length = len(objectlist)
-        self.objectList = objectList
+        self.objectList = objectlist
 
     def to_sym(self, entity_list):
         indices = np.zeros([len(entity_list)])
@@ -28,4 +30,4 @@ class Vocabulary(object):
 
     def from_config(cls, config):
         objectList = json.loads(config)
-        return cls(config)
+        return cls(objectList)
