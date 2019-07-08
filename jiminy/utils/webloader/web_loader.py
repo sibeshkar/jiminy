@@ -1,10 +1,13 @@
 from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 from jiminy.utils.webloader import utils
 
 class WebLoader:
     def __init__(self, browser='Firefox'):
         if browser == 'Firefox':
-            self.driver = webdriver.Firefox()
+            options = Options()
+            options.headless = True
+            self.driver = webdriver.Firefox(options=options)
         else:
             raise ValueError("Unknown broswer configuration: {}".format(browser))
         self.active_object = None

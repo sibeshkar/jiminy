@@ -25,6 +25,12 @@ class Vocabulary(object):
         indices = indices.astype(np.int64)
         return indices
 
+    def to_key(self, entity_list):
+        values = [None for _ in entity_list]
+        for i, entity in enumerate(entity_list):
+            values[i] = self.sym2key[entity]
+        return values
+
     def to_config(self):
         return json.dumps(self.objectList)
 

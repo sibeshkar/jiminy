@@ -6,9 +6,10 @@ from jiminy.representation.structure import utils, JiminyBaseObject
 from jiminy.utils.webloader import WebLoader
 from jiminy.envs import SeleniumWoBEnv
 from jiminy.representation.inference.betadom import BaseModel
+from jiminy.utils.ml import Vocabulary
 import os
 import numpy as np
-import time
+import queue
 import threading
 
 class betaDOMInstance(vectorized.ObservationWrapper):
@@ -19,10 +20,14 @@ class betaDOMInstance(vectorized.ObservationWrapper):
         self.screen_shape = screen_shape
         self.lock_queue = threading.Lock()
         self.frame_queue = queue.Queue()
+        self.die = False
+
+        # build model processor
+        self.vocab = Vocabulary(["START", "text", "input", "checkbox", "button", "click", "END"])
+        self.model = BaseModel(screen_shape=screen_shape, vocab=self.vocab)
+        self.model.create_model()
         self.fp_thread = threading.Thread(target=self.frame_processor, args=())
         self.fp_thread.start()
-        self.die = False
-        self.model = BaseModel
 
     def frame_processor(self):
         i = 0
@@ -30,6 +35,7 @@ class betaDOMInstance(vectorized.ObservationWrapper):
             frame = self.frame_queue.get()
             if i % 10 == 0:
                 self.objectList = self.model.forward_pass(frame)
+                print(self.objectList)
 
     def _observation(self, obs):
         if isinstance(obs, WebLoader):
@@ -42,7 +48,7 @@ class betaDOMInstance(vectorized.ObservationWrapper):
                     for obj in obs.getRawObjectList(screen_shape=(300,300))]
             self.objectList = utils.remove_ancestors(self.objectList)
             self.query = JiminyBaseObject(betaDOM=self, seleniumDriver=obs.driver, seleniumObject=obs.getInstructionFields())
-        elif isinstance(obs, np.array):
+        elif isinstance(obs, np.ndarray):
             with self.lock_queue:
                 self.frame_queue.put(obs)
 
@@ -94,11 +100,13 @@ class betaDOM(vectorized.ObservationWrapper):
         return self.env.step_runner(index, action)
 
 if __name__ == "__main__":
-    wobenv = SeleniumWoBEnv()
+    wobenv = SeleniumWoBEnv(screen_shape=(300,300))
     jiminy_home = os.getenv("JIMINY_ROOT")
     wobenv.configure(_n=1, remotes=["file:///{}/miniwob-plusplus/html/miniwob/click-checkboxes.html".format(jiminy_home)])
     betadom = betaDOM(wobenv)
     obs = betadom.reset()
     betadom.observation(obs)
-    print(betadom)
+
+    betadom.observation([np.zeros([300, 300, 3])])
+
     wobenv.close()

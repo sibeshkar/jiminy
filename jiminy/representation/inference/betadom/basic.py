@@ -12,17 +12,20 @@ Outputs:
     1. A single JiminyBaseObject's: objectType
     2. Same single JiminyBaseObject's: boundingBox
 """
-from data import create_dataset
+from jiminy.representation.inference.betadom.data import create_dataset
 from jiminy.utils.ml import Vocabulary
 import tensorflow as tf
+import numpy as np
+import time
 tf.enable_eager_execution()
 
 class BaseModel():
     def __init__(self, max_length=10,
-            tag_vocab_size=50,
+            vocab=None,
             screen_shape=(160,210)):
         self.max_length = max_length
-        self.tag_vocab_size = tag_vocab_size
+        self.vocab = vocab
+        self.tag_vocab_size = vocab.length
         self.screen_shape = screen_shape
 
     def create_model(self):
@@ -48,15 +51,15 @@ class BaseModel():
         self.tag_input = tf.keras.Input(shape=(self.max_length,))
         self.language_model = tf.keras.Sequential([
             tf.keras.layers.Embedding(self.tag_vocab_size, 64, input_length=self.max_length),
-            tf.keras.layers.CuDNNLSTM(128, return_sequences=True),
-            tf.keras.layers.CuDNNLSTM(128, return_sequences=True)
+            tf.keras.layers.LSTM(128, return_sequences=True),
+            tf.keras.layers.LSTM(128, return_sequences=True)
             ])
         encoded_tag = self.language_model(self.tag_input)
 
         decoder_input = tf.concat([encoded_image, encoded_tag], axis=-1)
         self.decoder_model = tf.keras.Sequential([
-            tf.keras.layers.CuDNNLSTM(256, return_sequences=True),
-            tf.keras.layers.CuDNNLSTM(256, return_sequences=False),
+            tf.keras.layers.LSTM(256, return_sequences=True),
+            tf.keras.layers.LSTM(256, return_sequences=False),
             ])
         decoder_model_output = self.decoder_model(decoder_input)
 
@@ -66,28 +69,51 @@ class BaseModel():
         self.model = tf.keras.Model(inputs=[self.image_input, self.tag_input],
                 outputs=[tag_bounding_box, tag_output])
 
+
     def forward_pass(self, img):
-        img_data = np.array(img).astype(np.float32).reshape([1] + list(self.screen_shape))
-        target_data = np.array([0 for _ in range(self.max_length)]).reshape((1, self.max_length))
-        object_list = []
-        multiplier = list(self.screen_shape) + list(self.screen_shape)
+        img_tensor = tf.convert_to_tensor(img, dtype=tf.float32)
+        img_tensor = tf.reshape(img_tensor, shape=[1] + list(img.shape))
 
-        while not is_done:
-            softmax, bb = self.model([img_data, target_data])
-            bb = bb.numpy() * multiplier
-            object_type_list.append((np.argmax(softmax.numpy()), bb))
+        tag_list = ["START" for _ in range(self.max_length)]
+        bb_list = []
+        count = 0
+        while (tag_list[-1] != "END") and count < self.max_length:
+            tag_list_sym = self.vocab.to_sym(tag_list)
+            tags = tf.reshape(tf.convert_to_tensor(tag_list_sym, dtype=tf.int64), [1, self.max_length])
+            bb,tag = self.model([img_tensor, tags])
+            bb_list.append(bb.numpy()[0])
+            last_tag = self.vocab.to_key(np.argmax(tag.numpy(), axis=-1))
+            tag_list = tag_list[1:] + last_tag
+            count += 1
 
-        return []
+        if tag_list[-1] == "END":
+            n = len(tag_list)
+            tag_list = tag_list[:(n-1)]
+            bb_list = bb_list[:(n-1)]
+        i = 0
+        while i < len(tag_list) and tag_list[i] == "START": i+=1
+        tag_list = tag_list[i:]
+        bb_list = bb_list[i:]
+
+        return tag_list, bb_list
 
 if __name__ == "__main__":
-    baseModel = BaseModel(screen_shape=(300,300))
+    vocab = Vocabulary(["START", "text","input", "checkbox", "button", "click", "END"])
+    baseModel = BaseModel(screen_shape=(300,300), vocab=vocab)
     baseModel.create_model()
     print(baseModel.model.summary())
 
-    vocab = Vocabulary(["text","input", "checkbox", "button", "click"])
-    dataset = create_dataset("logdir", 32, vocab, baseModel.max_length, tuple(baseModel.screen_shape + [3])
+    dataset = create_dataset("logdir", 32, vocab, 10, (300, 300,3))
 
-    for (img, prev_tags, _) in dataset.take(4):
+    for (img, prev_tags, _) in dataset.take(1):
         img = tf.cast(img, dtype=tf.float32)
         val = baseModel.model([img, prev_tags])
         print(val, [v.shape for v in val])
+
+    tstart = time.time()
+    img = np.zeros([300, 300,3], np.float32)
+
+    tstart = time.time()
+    tag_list = baseModel.forward_pass(img)
+    print(tag_list, time.time() - tstart)
+
