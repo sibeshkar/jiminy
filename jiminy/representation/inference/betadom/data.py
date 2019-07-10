@@ -17,7 +17,6 @@ We get examples of the form:
 """
 from jiminy.utils.ml import Vocabulary
 import tensorflow as tf
-tf.enable_eager_execution()
 import os
 import json
 import cv2
@@ -48,9 +47,11 @@ def load_from_file(fname, vocab):
         tag = np.array(vocab.to_sym([obj['objectType']]))
         boundingBox = np.array(list(obj['boundingBox'].values()))
         target_list.append(np.concatenate([tag, boundingBox]))
+    target_list.append(np.concatenate([np.array(vocab.to_sym(["END"])),
+        np.array([0, 0, 0, 0], dtype=np.int64)]))
     return img, target_list
 
-def generate_targets(img, target_list, max_target_length=10):
+def generate_targets(img, target_list, max_target_length=10, depth=10):
     img_list = []
     generated_target_list = []
     end_target_list = []
@@ -61,17 +62,25 @@ def generate_targets(img, target_list, max_target_length=10):
         t = np.array(targets, dtype=np.int64)
         generated_target_list.append(t)
         end_target_list.append(target)
-        targets = targets[:(max_target_length-1)] + [target[0]]
+        targets = targets[1:] + [target[0]]
+
+    img_list = np.array(img_list).astype(np.float32)
     img_dataset = tf.convert_to_tensor(img_list)
+
     generated_target_dataset = tf.convert_to_tensor(generated_target_list, dtype=tf.int64)
+    # generated_target_dataset = tf.one_hot(generated_target_dataset, on_value=1.0, off_value=0., depth=depth)
+
     end_target_list = np.array(end_target_list)
-    target_dataset = tf.convert_to_tensor(end_target_list.astype(np.int64), dtype=tf.int64)
-    return tf.tuple([img_dataset, generated_target_dataset, target_dataset])
+
+    target_dataset = tf.convert_to_tensor(end_target_list[:,0].astype(np.int64), dtype=tf.int64)
+    target_dataset = tf.one_hot(target_dataset, depth=depth, on_value=1.0, off_value=0.)
+    target_bb_dataset = tf.convert_to_tensor(end_target_list[:,1:].astype(np.float32), dtype=tf.float32)
+    return tf.tuple([img_dataset, generated_target_dataset, target_dataset, target_bb_dataset])
 
 def transform_to_slices(vocab, max_target_length=10):
     def transform(fname):
         img, target_list = load_from_file(fname, vocab)
-        return generate_targets(img, target_list, max_target_length=10)
+        return generate_targets(img, target_list, max_target_length=10, depth=vocab.length)
     return transform
 
 def tf_py_function(fn, types, shapes):
@@ -79,18 +88,25 @@ def tf_py_function(fn, types, shapes):
         tf_result = tf.py_function(inp=(fname,), func=fn, Tout=types)
         assert len(tf_result) == len(shapes), "Shape mismatch : {}, {}".format(tf_result, shapes)
         n = len(tf_result)
+
+        tf_result = [tf.reshape(tf_result[i], (-1,) + shapes[i]) for i in range(n)]
+
         tf_result = [tf.data.Dataset.from_tensor_slices(tf_result[i]) for i in range(n)]
-        return tf.data.Dataset.zip(tuple(tf_result))
+
+        input_dataset = tf.data.Dataset.zip(tuple(tf_result[:2]))
+        output_dataset = tf.data.Dataset.zip(tuple(tf_result[2:][::-1]))
+        return tf.data.Dataset.zip((input_dataset, output_dataset))
     return thunked_fn
 
-def create_dataset(dir_name, batch_size, vocab, max_target_length, screen_shape):
+def create_dataset(dir_name, batch_size, vocab, max_target_length, screen_shape, num_files=10000):
+    assert vocab.to_sym(["START"]) == [0], "Expected first value in Vocab to be START, got: {}".format(vocab.to_key([0])[0])
     dir_name = dataroot + dir_name
     assert os.path.exists(dir_name), "Path does not exist: {}".format(dir_name)
 
-    files = tf.data.Dataset.list_files(dir_name + "/*.json", shuffle=True)
+    files = tf.data.Dataset.list_files(dir_name + "/*.json", shuffle=True).take(num_files)
     dataset = files.flat_map(tf_py_function(fn=transform_to_slices(vocab, max_target_length),
-        types=(tf.int32, tf.int64, tf.int64),
-        shapes=(screen_shape, (max_target_length,), (5,))))
+        types=(tf.float32, tf.int64, tf.float32, tf.float32),
+        shapes=(screen_shape, (max_target_length,), (vocab.length,), (4,))))
     dataset = dataset.shuffle(batch_size // 4)
     dataset = dataset.batch(batch_size)
     return dataset
@@ -100,4 +116,5 @@ if __name__ == "__main__":
     vocab = Vocabulary(["text","input", "checkbox", "button", "click"])
     dataset = create_dataset("logdir", 32, vocab, 10, (300, 300,3))
     for e in dataset.take(4):
+        print(e[1])
         print([v.shape for v in e])

@@ -17,7 +17,7 @@ from jiminy.utils.ml import Vocabulary
 import tensorflow as tf
 import numpy as np
 import time
-tf.enable_eager_execution()
+# tf.enable_eager_execution()
 
 class BaseModel():
     def __init__(self, max_length=10,
@@ -105,10 +105,10 @@ if __name__ == "__main__":
 
     dataset = create_dataset("logdir", 32, vocab, 10, (300, 300,3))
 
-    for (img, prev_tags, _) in dataset.take(1):
-        img = tf.cast(img, dtype=tf.float32)
-        val = baseModel.model([img, prev_tags])
-        print(val, [v.shape for v in val])
+    for (X, y) in dataset.take(1):
+        print(X)
+        val = baseModel.model(X)
+        print([v.shape for v in val])
 
     tstart = time.time()
     img = np.zeros([300, 300,3], np.float32)
