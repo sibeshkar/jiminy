@@ -32,15 +32,15 @@ class BaseModel():
         w,h = self.screen_shape
         self.image_input = tf.keras.Input(shape=(w,h,3), dtype=tf.float32) # image input is 256x256 RGB
         self.image_model = tf.keras.Sequential([
-            tf.keras.layers.Conv2D(16, (3,3), padding='valid', activation='relu'),
+            tf.keras.layers.Conv2D(16, (5,5), padding='valid', activation='relu'),
             tf.keras.layers.Conv2D(16, (3,3), padding='same', strides=2, activation='relu'),
-            tf.keras.layers.Conv2D(32, (3,3), padding='same', activation='relu'),
-            tf.keras.layers.Conv2D(32, (3,3), padding='same', strides=2, activation='relu'),
-            tf.keras.layers.Conv2D(64, (3,3), padding='same', activation='relu'),
-            tf.keras.layers.Conv2D(64, (3,3), padding='same', strides=2, activation='relu'),
-            tf.keras.layers.Conv2D(128, (3,3), padding='same', activation='relu'),
+            tf.keras.layers.Conv2D(32, (5,5), padding='same', activation='relu'),
+            tf.keras.layers.Conv2D(32, (3,3), padding='same', strides=4, activation='relu'),
+            tf.keras.layers.Conv2D(64, (5,5), padding='same', activation='relu'),
+            tf.keras.layers.Conv2D(64, (3,3), padding='same', strides=4, activation='relu'),
+            tf.keras.layers.Conv2D(128, (5,5), padding='same', activation='relu'),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(1024, activation='relu'),
+            tf.keras.layers.Dense(512, activation='relu'),
             tf.keras.layers.Dropout(0.3),
             tf.keras.layers.Dense(256, activation='relu'),
             tf.keras.layers.Dropout(0.3),
@@ -52,18 +52,18 @@ class BaseModel():
         self.language_model = tf.keras.Sequential([
             tf.keras.layers.Embedding(self.tag_vocab_size, 64, input_length=self.max_length),
             tf.keras.layers.LSTM(128, return_sequences=True),
-            tf.keras.layers.LSTM(128, return_sequences=True)
+            # tf.keras.layers.LSTM(128, return_sequences=True)
             ])
         encoded_tag = self.language_model(self.tag_input)
 
         decoder_input = tf.concat([encoded_image, encoded_tag], axis=-1)
         self.decoder_model = tf.keras.Sequential([
-            tf.keras.layers.LSTM(256, return_sequences=True),
+            # tf.keras.layers.LSTM(256, return_sequences=True),
             tf.keras.layers.LSTM(256, return_sequences=False),
             ])
         decoder_model_output = self.decoder_model(decoder_input)
 
-        tag_bounding_box = tf.keras.layers.Dense(4, activation='sigmoid')(decoder_model_output)
+        tag_bounding_box = tf.keras.layers.Dense(4, activation='sigmoid')(decoder_model_output) * tf.convert_to_tensor([w, h, w, h], dtype=tf.float32)
         tag_output = tf.keras.layers.Dense(self.tag_vocab_size, activation='softmax')(decoder_model_output)
         self.decoder_output = tf.concat([tag_output, tag_bounding_box], axis=-1)
         self.model = tf.keras.Model(inputs=[self.image_input, self.tag_input],

@@ -109,6 +109,7 @@ def create_dataset(dir_name, batch_size, vocab, max_target_length, screen_shape,
         shapes=(screen_shape, (max_target_length,), (vocab.length,), (4,))))
     dataset = dataset.shuffle(batch_size // 4)
     dataset = dataset.batch(batch_size)
+    dataset = dataset.prefetch(1000*batch_size)
     return dataset
 
 

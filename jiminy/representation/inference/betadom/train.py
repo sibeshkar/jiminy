@@ -6,6 +6,7 @@ from jiminy.representation.inference.betadom.data import create_dataset
 from jiminy.utils.ml import Vocabulary
 import tensorflow as tf
 from jiminy.representation.inference.betadom.basic import BaseModel
+import datetime
 
 class BaseModelLoss(tf.keras.losses.Loss):
     def __init__(self, lambda_bb=1e-2):
@@ -31,7 +32,7 @@ class BaseModelTrainer(object):
         self.lambda_bb = lambda_bb
         self.vocab = vocab
 
-        self.dataset = create_dataset(model_dir, 32, vocab, 10, (300, 300, 3), int(1e5))
+        self.dataset = create_dataset(model_dir, 64, vocab, 10, (300, 300, 3), int(1e5))
         self.baseModel = BaseModel(screen_shape=(300, 300), vocab=vocab)
         self.baseModel.create_model()
         print("Created Model")
@@ -42,6 +43,7 @@ class BaseModelTrainer(object):
                 metrics=[self.get_metric()])
 
     def train(self, dataset, epochs=100, callbacks=[], steps_per_epoch=100):
+        self.dataset = self.dataset.repeat(epochs)
         self.baseModel.model.fit(dataset, epochs=epochs,
                 callbacks=callbacks,
                 steps_per_epoch=steps_per_epoch)
@@ -62,5 +64,6 @@ if __name__ == "__main__":
     vocab = Vocabulary(["START", "text","input", "checkbox", "button", "click", "END"])
     bmt = BaseModelTrainer(vocab=vocab)
     print(bmt.dataset)
-    callbacks = [tf.keras.callbacks.TensorBoard()]
-    bmt.train(dataset=bmt.dataset, epochs=100, callbacks=callbacks, steps_per_epoch=int(4e5))
+    callbacks = [tf.keras.callbacks.TensorBoard(log_dir="logs/BaseModel-{}".format(datetime.datetime.now().strftime("%d-%b-%Y::%H-%M"))
+        ,update_freq=10)]
+    bmt.train(dataset=bmt.dataset, epochs=100, callbacks=callbacks, steps_per_epoch=int(7185)) # TODO(prannayk): automate setting up steps_per_epoch
