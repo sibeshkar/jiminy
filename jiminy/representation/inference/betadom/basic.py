@@ -22,11 +22,24 @@ import time
 class BaseModel():
     def __init__(self, max_length=10,
             vocab=None,
-            screen_shape=(160,210)):
+            screen_shape=(160,210),
+            config=dict()):
         self.max_length = max_length
         self.vocab = vocab
         self.tag_vocab_size = vocab.length
         self.screen_shape = screen_shape
+
+        self.config = config
+        if not "last_conv" in self.config:
+            self.config["last_conv"] = 96
+        if not "lm_lstm_size" in self.config:
+            self.config["lm_lstm_size"] = 128
+        if not "lm_lstm_layer_num" in self.config:
+            self.config["lm_lstm_layer_num"] = 2
+        if not "decoder_middle_lstm" in self.config:
+            self.config["decoder_middle_lstm"] = True
+
+
 
     def create_model(self):
         w,h = self.screen_shape
@@ -38,7 +51,7 @@ class BaseModel():
             tf.keras.layers.Conv2D(32, (3,3), padding='same', strides=4, activation='relu'),
             tf.keras.layers.Conv2D(64, (5,5), padding='same', activation='relu'),
             tf.keras.layers.Conv2D(64, (3,3), padding='same', strides=4, activation='relu'),
-            tf.keras.layers.Conv2D(96, (5,5), padding='same', activation='relu'),
+            tf.keras.layers.Conv2D(self.config["last_conv"], (5,5), padding='same', activation='relu'),
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(512, activation='relu'),
             tf.keras.layers.Dropout(0.3),
@@ -50,17 +63,17 @@ class BaseModel():
 
         self.tag_input = tf.keras.Input(shape=(self.max_length,))
         self.language_model = tf.keras.Sequential([
-            tf.keras.layers.Embedding(self.tag_vocab_size, 64, input_length=self.max_length),
-            tf.keras.layers.LSTM(128, return_sequences=True),
-            tf.keras.layers.LSTM(128, return_sequences=True)
+            tf.keras.layers.Embedding(self.tag_vocab_size, 64, input_length=self.max_length)
             ])
+        for _ in range(self.config["lm_lstm_layer_num"]):
+            self.language_model.add(tf.keras.layers.LSTM(128, return_sequences=True))
         encoded_tag = self.language_model(self.tag_input)
 
         decoder_input = tf.keras.layers.concatenate(inputs=[encoded_image, encoded_tag], axis=-1)
-        self.decoder_model = tf.keras.Sequential([
-            tf.keras.layers.LSTM(128, return_sequences=True),
-            tf.keras.layers.LSTM(128, return_sequences=False),
-            ])
+        self.decoder_model = tf.keras.Sequential()
+        if self.config["decoder_middle_lstm"]:
+            self.decoder_model.add(tf.keras.layers.LSTM(self.config["lm_lstm_size"], return_sequences=True))
+        self.decoder_model.add(tf.keras.layers.LSTM(self.config["lm_lstm_size"], return_sequences=False))
         decoder_model_output = self.decoder_model(decoder_input)
 
         tag_bounding_box = tf.keras.layers.Dense(4, activation='sigmoid')(decoder_model_output) * tf.convert_to_tensor([w, h, w, h], dtype=tf.float32)
