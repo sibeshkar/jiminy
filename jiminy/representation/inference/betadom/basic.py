@@ -38,12 +38,12 @@ class BaseModel():
             tf.keras.layers.Conv2D(32, (3,3), padding='same', strides=4, activation='relu'),
             tf.keras.layers.Conv2D(64, (5,5), padding='same', activation='relu'),
             tf.keras.layers.Conv2D(64, (3,3), padding='same', strides=4, activation='relu'),
-            tf.keras.layers.Conv2D(128, (5,5), padding='same', activation='relu'),
+            tf.keras.layers.Conv2D(96, (5,5), padding='same', activation='relu'),
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(512, activation='relu'),
             tf.keras.layers.Dropout(0.3),
             tf.keras.layers.Dense(256, activation='relu'),
-            tf.keras.layers.Dropout(0.3),
+            tf.keras.layers.Dropout(0.4),
             tf.keras.layers.RepeatVector(self.max_length)
             ])
         encoded_image = self.image_model(self.image_input)
@@ -52,20 +52,20 @@ class BaseModel():
         self.language_model = tf.keras.Sequential([
             tf.keras.layers.Embedding(self.tag_vocab_size, 64, input_length=self.max_length),
             tf.keras.layers.LSTM(128, return_sequences=True),
-            # tf.keras.layers.LSTM(128, return_sequences=True)
+            tf.keras.layers.LSTM(128, return_sequences=True)
             ])
         encoded_tag = self.language_model(self.tag_input)
 
-        decoder_input = tf.concat([encoded_image, encoded_tag], axis=-1)
+        decoder_input = tf.keras.layers.concatenate(inputs=[encoded_image, encoded_tag], axis=-1)
         self.decoder_model = tf.keras.Sequential([
-            # tf.keras.layers.LSTM(256, return_sequences=True),
-            tf.keras.layers.LSTM(256, return_sequences=False),
+            tf.keras.layers.LSTM(128, return_sequences=True),
+            tf.keras.layers.LSTM(128, return_sequences=False),
             ])
         decoder_model_output = self.decoder_model(decoder_input)
 
         tag_bounding_box = tf.keras.layers.Dense(4, activation='sigmoid')(decoder_model_output) * tf.convert_to_tensor([w, h, w, h], dtype=tf.float32)
         tag_output = tf.keras.layers.Dense(self.tag_vocab_size, activation='softmax')(decoder_model_output)
-        self.decoder_output = tf.concat([tag_output, tag_bounding_box], axis=-1)
+        self.decoder_output = tf.keras.layers.concatenate(inputs=[tag_output, tag_bounding_box], axis=-1)
         self.model = tf.keras.Model(inputs=[self.image_input, self.tag_input],
                 outputs=[tag_bounding_box, tag_output])
 

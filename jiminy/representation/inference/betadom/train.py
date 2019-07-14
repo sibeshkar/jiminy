@@ -3,26 +3,12 @@ Training algorithm is simple. Backprop through time.
 """
 
 from jiminy.representation.inference.betadom.data import create_dataset
-from jiminy.utils.ml import Vocabulary, ScreenVisualizerCls
 import tensorflow as tf
 tf.enable_eager_execution()
+from jiminy.utils.ml import Vocabulary, ScreenVisualizerCallback, getVisualizationList
 from jiminy.representation.inference.betadom.basic import BaseModel
 import datetime
-
-class PrettyPrintOutput(tf.keras.Callback):
-    def __init__(self, dataset, vocab, logdir, prefix):
-        super(PrettyPrintOutput, self).__init__()
-        self.dataset = dataset
-        self.vocab = vocab
-
-        self.logdir, self.prefix = logdir, prefix
-        self.screenVisualizer = ScreenVisualizerCls(self.logdir, self.prefix)
-
-    def on_epoch_end(self, epoch, logs=None):
-        for i in self.dataset:
-            label, bounding_box = self.model.forward_pass(self.dataset[i])
-            self.screenVisualizer(self.dataset[i], bounding_box, label, epoch)
-
+import argparse
 
 class BaseModelTrainer(object):
     def __init__(self, learning_rate=1e-4, learning_algorithm="Adam",
@@ -39,9 +25,9 @@ class BaseModelTrainer(object):
 
         self.dataset = create_dataset(model_dir, 64, vocab, 10, (300, 300, 3), int(1e5))
         self.baseModel = BaseModel(screen_shape=(300, 300), vocab=vocab)
-        with tf.device("/cpu:0"):
-            self.baseModel.create_model()
-        self.baseModel.model = tf.keras.multi_gpu_model(self.baseModel.model)
+        # with tf.device("/cpu:0"):
+        self.baseModel.create_model()
+        # self.baseModel.model = tf.keras.utils.multi_gpu_model(self.baseModel.model, num_gpus)
         print("Created Model")
 
         self.baseModel.model.summary()
@@ -61,19 +47,36 @@ class BaseModelTrainer(object):
 
     def get_loss_weights(self):
         return [
-                1e-2,
-                1.
+                1.,
+                0.5
             ]
 
     def get_metric(self):
         return tf.keras.metrics.MeanSquaredError()
 
+parser = argparse.ArgumentParser(description="BaseModelTrainer settings")
+parser.add_argument("--model_name", dest="model_name", action="store",
+        default="baseModel.h5", help="Model name to which training has to be stored")
+parser.add_argument("--test", dest="test", action="store_const",
+        const=True, default=False, help="Run the model in test model on a small batch of samples")
+args = parser.parse_args()
+
 if __name__ == "__main__":
+    start_time = datetime.datetime.now().strftime("%d-%b-%Y::%H-%M")
     vocab = Vocabulary(["START", "text","input", "checkbox", "button", "click", "END"])
     bmt = BaseModelTrainer(vocab=vocab)
 
-    callbacks = [tf.keras.callbacks.TensorBoard(log_dir="logs/BaseModel-{}".format(datetime.datetime.now().strftime("%d-%b-%Y::%H-%M"))
-        ,update_freq=10),
-            tf.keras.callbacks.ModelCheckpoint("logs/baseModel.tf", save_weights_only=False, load_weights_on_restart=True),
+    visualization_img_list = getVisualizationList(bmt.dataset)
+    logdir = "./logdir"
+    prefix = "{}".format(start_time)
+
+    callbacks = [
+            tf.keras.callbacks.TensorBoard(log_dir="logs/BaseModel-{}".format(start_time), update_freq=10),
+            tf.keras.callbacks.ModelCheckpoint("logs/{}".format(args.model_name), save_weights_only=True, load_weights_on_restart=True),
+            ScreenVisualizerCallback(dataset=visualization_img_list, vocab=vocab, logdir=logdir, prefix=prefix, baseModel=bmt.baseModel)
             ]
-    bmt.train(epochs=100, callbacks=callbacks, steps_per_epoch=int(7185)) # TODO(prannayk): automate setting up steps_per_epoch
+    epochs, steps_per_epoch = 100, 7185
+    if args.test:
+        # test the training mechanism
+        epochs, steps_per_epoch = 10, 10
+    bmt.train(epochs=epochs, callbacks=callbacks, steps_per_epoch=int(steps_per_epoch))
