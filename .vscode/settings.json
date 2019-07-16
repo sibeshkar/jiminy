@@ -1,4 +1,4 @@
 {
-    "python.pythonPath": "/home/sibesh/anaconda3/envs/jiminy/bin/python",
+    "python.pythonPath": "/anaconda3/envs/jiminy/bin/python",
     "python.linting.enabled": true
 }

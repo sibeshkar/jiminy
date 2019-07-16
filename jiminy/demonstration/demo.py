@@ -5,6 +5,7 @@
 from __future__ import print_function
 import demo_pb2
 import sys
+import heapq
 
 filepath = 'recordings/recording_1563174043/proto.rbs'
 
@@ -75,7 +76,10 @@ class FBUpdateReader(object):
             raise StopIteration
         else:
             self.idx +=1
-            return self.demonstration.fbupdates[self.idx] 
+            return {
+                "timestamp" : self.demonstration.fbupdates[self.idx].timestamp,
+                "fbupdate" : self.demonstration.fbupdates[self.idx],
+            } 
         
 class KeyEventReader(object):
     def __init__(self, filepath):
@@ -97,7 +101,12 @@ class KeyEventReader(object):
             raise StopIteration
         else:
             self.idx +=1
-            return self.demonstration.keyevents[self.idx] 
+            return {
+                "timestamp" : self.demonstration.keyevents[self.idx].timestamp,
+                "keyevent" : self.demonstration.keyevents[self.idx],
+            }
+        
+         
 
 class PointerEventReader(object):
     def __init__(self, filepath):
@@ -119,25 +128,58 @@ class PointerEventReader(object):
             raise StopIteration
         else:
             self.idx +=1
-            return self.demonstration.pointerevents[self.idx] 
+            return {
+                "timestamp" : self.demonstration.pointerevents[self.idx].timestamp,
+                "pointerevent" : self.demonstration.pointerevents[self.idx],
+            }
 
 
+class MergedEventReader(object):
+    def __init__(self, *timestamped_iterables):
+        """
+        Args:
+            timestamped_iterables: A set of iterables that return dictionaries. Each dictionary must contain a 'timestamp' key that is monotonically increasing
+        """
+        self.merged_iterables = heapq.merge(*timestamped_iterables, key=self._extract_timestamp)
+        self.timestamp = None
+
+    @staticmethod
+    def _extract_timestamp(line):
+        if not isinstance(line, dict):
+            raise InvalidEventLogfileError("MultiIterator received a line that's not a dictionary: {}".format(line))
+        try:
+            return float(line['timestamp'])
+        except KeyError:
+            raise InvalidEventLogfileError("MultiIterator received a line without a timestamp: {}".format(line))
+
+    
+    def next(self):
+        return self.__next__()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        """
+        Returns the next item from our iterable lists, sorted by timestamp
+        """
+        data = next(self.merged_iterables)
+        timestamp = data['timestamp']
+        if self.timestamp and (timestamp < self.timestamp):
+            raise InvalidEventLogfileError("MultiIterator received a line with an out of order timestamp: {}".format(data))
+
+        self.timestamp = timestamp
+        return data
 
 
+mer = MergedEventReader(PointerEventReader(filepath),FBUpdateReader(filepath))
 
-
-fbr = iter(PointerEventReader(filepath))
-i = 0
-
-while True:
-    try:
-        fbu = next(fbr)
-        print("PointerEvent number:", i)
-        i += 1
-    except IndexError:
-        break
-    print("X: %d, Y: %d, Mask: %d" % (fbu.X, fbu.Y, fbu.Mask))
-
+# while True:
+#     try:
+#         fbu = next(mer)
+#     except IndexError:
+#         break
+#     print(fbu)
 # Main procedure:  Reads the entire address book from a file and prints all
 #   the information inside.
 # if len(sys.argv) != 2:
