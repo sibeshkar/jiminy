@@ -56,7 +56,7 @@ class BaseModel():
             tf.keras.layers.Dense(512, activation='relu'),
             tf.keras.layers.Dropout(0.3),
             tf.keras.layers.Dense(256, activation='relu'),
-            tf.keras.layers.Dropout(0.4),
+            tf.keras.layers.Dropout(0.3),
             tf.keras.layers.RepeatVector(self.max_length)
             ])
         encoded_image = self.image_model(self.image_input)

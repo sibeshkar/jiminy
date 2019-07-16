@@ -63,6 +63,8 @@ parser.add_argument("--test", dest="test", action="store_const",
         const=True, default=False, help="Run the model in test model on a small batch of samples")
 parser.add_argument("--model_config", dest="model_config", action="store",
         default="model_config/small.json", help="Defines the basic model which is smaller than stored params")
+parser.add_argument("--learning_rate", dest="learning_rate", action="store",
+        default=1e-4, type=float, help="Learning rate for algorithm")
 args = parser.parse_args()
 
 if __name__ == "__main__":
@@ -74,7 +76,7 @@ if __name__ == "__main__":
             json_obj = json.load(f)
         config_dict = dict(json_obj)
 
-    bmt = BaseModelTrainer(learning_rate=1e-4, vocab=vocab, config=config_dict)
+    bmt = BaseModelTrainer(learning_rate=args.learning_rate, vocab=vocab, config=config_dict)
 
     visualization_img_list = getVisualizationList(bmt.dataset)
     logdir = "./logdir"
