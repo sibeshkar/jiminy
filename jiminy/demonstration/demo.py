@@ -6,6 +6,8 @@ from __future__ import print_function
 import demo_pb2
 import sys
 
+filepath = 'recordings/recording_1563174043/proto.rbs'
+
 class VNCDemonstration(object):
     def __init__(self, filepath):
         self.demonstration = demo_pb2.Demonstration()
@@ -57,37 +59,91 @@ class FBUpdateReader(object):
     def __init__(self, filepath):
         self.demonstration = demo_pb2.Demonstration()
         self.initialize_from_file(filepath)
+        self.idx = 0
+        self.max_length = len(self.demonstration.fbupdates)
 
     def initialize_from_file(self, filepath):
         with open(filepath, "rb") as f:
             self.demonstration.ParseFromString(f.read())
-
-        self.fbupdates = [x for x in self.demonstration.fbupdates]
+       # self.fbupdates = [x for x in self.demonstration.fbupdates]
 
     def __iter__(self):
         return self
-    
-    def next(self):
-        return self.__next__()
 
     def __next__(self):
-        yield self.fbupdates
-
+        if self.idx > self.max_length:
+            raise StopIteration
+        else:
+            self.idx +=1
+            return self.demonstration.fbupdates[self.idx] 
         
+class KeyEventReader(object):
+    def __init__(self, filepath):
+        self.demonstration = demo_pb2.Demonstration()
+        self.initialize_from_file(filepath)
+        self.idx = 0
+        self.max_length = len(self.demonstration.keyevents)
+
+    def initialize_from_file(self, filepath):
+        with open(filepath, "rb") as f:
+            self.demonstration.ParseFromString(f.read())
+       # self.fbupdates = [x for x in self.demonstration.fbupdates]
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.idx > self.max_length:
+            raise StopIteration
+        else:
+            self.idx +=1
+            return self.demonstration.keyevents[self.idx] 
+
+class PointerEventReader(object):
+    def __init__(self, filepath):
+        self.demonstration = demo_pb2.Demonstration()
+        self.initialize_from_file(filepath)
+        self.idx = 0
+        self.max_length = len(self.demonstration.pointerevents)
+
+    def initialize_from_file(self, filepath):
+        with open(filepath, "rb") as f:
+            self.demonstration.ParseFromString(f.read())
+       # self.fbupdates = [x for x in self.demonstration.fbupdates]
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.idx > self.max_length:
+            raise StopIteration
+        else:
+            self.idx +=1
+            return self.demonstration.pointerevents[self.idx] 
 
 
 
 
 
+
+fbr = iter(PointerEventReader(filepath))
+i = 0
+
+while True:
+    try:
+        fbu = next(fbr)
+        print("PointerEvent number:", i)
+        i += 1
+    except IndexError:
+        break
+    print("X: %d, Y: %d, Mask: %d" % (fbu.X, fbu.Y, fbu.Mask))
 
 # Main procedure:  Reads the entire address book from a file and prints all
 #   the information inside.
 # if len(sys.argv) != 2:
-#   print("Usage:", sys.argv[0], "DEMO_FILE")
-#   sys.exit(-1)
-
+#    print("Usage:", sys.argv[0], "DEMO_FILE")
+#    sys.exit(-1)
 # vncdemo = VNCDemonstration(sys.argv[1])
-
-# vncdemo.printInitMsg()
-# vncdemo.listPointerEvents()
+# #vncdemo.printInitMsg()
+# #vncdemo.listPointerEvents()
 # vncdemo.listFBUpdates()
