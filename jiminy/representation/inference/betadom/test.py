@@ -1,6 +1,6 @@
 from jiminy.utils.ml import Vocabulary, getVisualizationList, screenVisualizer
 import tensorflow as tf
-tf.enable_eager_execution()
+# tf.enable_eager_execution()
 from jiminy.representation.inference.betadom import BaseModelTrainer
 import datetime
 import argparse

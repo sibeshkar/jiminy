@@ -4,7 +4,7 @@ Training algorithm is simple. Backprop through time.
 
 from jiminy.representation.inference.betadom.data import create_dataset
 import tensorflow as tf
-tf.enable_eager_execution()
+# tf.enable_eager_execution()
 from jiminy.utils.ml import Vocabulary, ScreenVisualizerCallback, getVisualizationList
 from jiminy.representation.inference.betadom import BaseModel, SoftmaxLocationModel
 import datetime
@@ -32,7 +32,7 @@ class BaseModelTrainer(object):
             self.baseModel = BaseModel(screen_shape=(300, 300), vocab=vocab, config=config)
         elif self.model_type == "softmax":
             self.baseModel = SoftmaxLocationModel(screen_shape=(300,300), vocab=vocab, config=config)
-            self.dataset = create_dataset(model_dir, 128, vocab, 10, (300, 300, 3), int(1e5), one_hot=True)
+            self.dataset = create_dataset(model_dir, 64, vocab, 10, (300, 300, 3), int(1e5), one_hot=True)
 
         self.baseModel.create_model()
         print("Created Model")
@@ -85,16 +85,18 @@ if __name__ == "__main__":
 
     bmt = BaseModelTrainer(model_type=args.model_type, learning_rate=args.learning_rate, vocab=vocab, config=config_dict)
 
-    visualization_img_list = getVisualizationList(bmt.dataset)
     logdir = "./logdir"
     prefix = "{}".format(start_time)
 
     callbacks = [
             tf.keras.callbacks.TensorBoard(log_dir="logs/BaseModel-{}".format(start_time), update_freq=10),
             tf.keras.callbacks.ModelCheckpoint("logs/{}".format(args.model_name), save_weights_only=True, load_weights_on_restart=True),
-            # ScreenVisualizerCallback(dataset=visualization_img_list, vocab=vocab, logdir=logdir, prefix=prefix, baseModel=bmt.baseModel)
             ]
-    epochs, steps_per_epoch = 100, 7185 // 2
+    if args.model_type == "basic":
+        visualization_img_list = getVisualizationList(bmt.dataset)
+        callbacks += [ScreenVisualizerCallback(dataset=visualization_img_list, vocab=vocab, logdir=logdir, prefix=prefix, baseModel=bmt.baseModel)]
+
+    epochs, steps_per_epoch = 100, 7185
     if args.test:
         # test the training mechanism
         epochs, steps_per_epoch = 10, 10
