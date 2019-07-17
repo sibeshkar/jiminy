@@ -110,6 +110,12 @@ class BaseModel():
 
         return tag_list, bb_list
 
+    def get_loss(self):
+        return ["mse", "categorical_crossentropy"]
+
+    def get_loss_weights(self):
+        return [1e-1, 0.5]
+
 if __name__ == "__main__":
     vocab = Vocabulary(["START", "text","input", "checkbox", "button", "click", "END"])
     baseModel = BaseModel(screen_shape=(300,300), vocab=vocab)

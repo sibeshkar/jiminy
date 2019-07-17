@@ -110,6 +110,12 @@ class SoftmaxLocationModel():
 
         return tag_list, bb_list
 
+    def get_loss(self):
+        return ["categorical_crossentropy" for _ in range(5)]
+
+    def get_loss_weights(self):
+        return [1. for _ in range(5)]
+
 if __name__ == "__main__":
     vocab = Vocabulary(["START", "text","input", "checkbox", "button", "click", "END"])
     baseModel = BaseModel(screen_shape=(300,300), vocab=vocab)

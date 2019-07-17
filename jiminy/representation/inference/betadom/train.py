@@ -6,8 +6,7 @@ from jiminy.representation.inference.betadom.data import create_dataset
 import tensorflow as tf
 tf.enable_eager_execution()
 from jiminy.utils.ml import Vocabulary, ScreenVisualizerCallback, getVisualizationList
-from jiminy.representation.inference.betadom.basic import BaseModel
-from jiminy.representation.inference.betadom.softmax_layer import SoftmaxLocationModel
+from jiminy.representation.inference.betadom import BaseModel, SoftmaxLocationModel
 import datetime
 import argparse
 import json
@@ -46,23 +45,15 @@ class BaseModelTrainer(object):
 
     def train(self, epochs=100, callbacks=[], steps_per_epoch=100):
         self.dataset = self.dataset.repeat(epochs)
-        self.baseModel.model.load_weights("logs/{}".format(args.model_name))
         self.baseModel.model.fit(self.dataset, epochs=epochs,
                 callbacks=callbacks,
                 steps_per_epoch=steps_per_epoch)
 
     def get_loss(self):
-        if self.model_type == "basic":
-            return ["mse", "categorical_crossentropy"]
+        return self.baseModel.get_loss()
 
     def get_loss_weights(self):
-        if self.model_type == "basic":
-            return [
-                1.,
-                0.5
-            ]
-        elif self.model_type == "softmax":
-            return [1. for _ in range(5)]
+        return self.baseModel.get_loss_weights()
 
     def get_metric(self):
         if self.model_type == "basic":
@@ -82,7 +73,6 @@ parser.add_argument("--learning_rate", dest="learning_rate", action="store",
 parser.add_argument("--model_type", dest="model_type", action="store",
         default="basic", type=str, help="Model type to be used for training")
 args = parser.parse_args()
-print(args)
 
 if __name__ == "__main__":
     start_time = datetime.datetime.now().strftime("%d-%b-%Y::%H-%M")

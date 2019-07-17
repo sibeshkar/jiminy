@@ -76,7 +76,7 @@ def generate_targets(img, target_list, max_target_length=10, depth=10, screen_sh
     target_dataset = tf.one_hot(target_dataset, depth=depth, on_value=1.0, off_value=0.)
 
     if screen_shape is None:
-        target_dataset = tf.convert_to_tensor(end_target_list[:,1:].astype(np.float32), dtype=tf.float32)
+        target_bb_dataset = tf.convert_to_tensor(end_target_list[:,1:].astype(np.float32), dtype=tf.float32)
         return tf.tuple([img_dataset, generated_target_dataset, target_dataset, target_bb_dataset])
 
     target_bb_dataset = [tf.convert_to_tensor(end_target_list[:,i+1].astype(np.int64), dtype=tf.int64) for i in range(4)]
