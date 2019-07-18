@@ -4,7 +4,7 @@ Training algorithm is simple. Backprop through time.
 
 from jiminy.representation.inference.betadom.data import create_dataset
 import tensorflow as tf
-# tf.enable_eager_execution()
+tf.enable_eager_execution()
 from jiminy.utils.ml import Vocabulary, ScreenVisualizerCallback, getVisualizationList
 from jiminy.representation.inference.betadom import BaseModel, SoftmaxLocationModel
 import datetime
