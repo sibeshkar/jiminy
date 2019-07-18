@@ -71,6 +71,7 @@ def generate_targets(img, target_list, max_target_length=10, depth=10, screen_sh
     # generated_target_dataset = tf.one_hot(generated_target_dataset, on_value=1.0, off_value=0., depth=depth)
 
     end_target_list = np.array(end_target_list)
+    print(end_target_list)
 
     target_dataset = tf.convert_to_tensor(end_target_list[:,0].astype(np.int64), dtype=tf.int64)
     target_dataset = tf.one_hot(target_dataset, depth=depth, on_value=1.0, off_value=0.)
