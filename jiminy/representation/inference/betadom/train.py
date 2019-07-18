@@ -4,7 +4,7 @@ Training algorithm is simple. Backprop through time.
 
 from jiminy.representation.inference.betadom.data import create_dataset
 import tensorflow as tf
-# tf.enable_eager_execution()
+tf.enable_eager_execution()
 from jiminy.utils.ml import Vocabulary, ScreenVisualizerCallback, getVisualizationList
 from jiminy.representation.inference.betadom import BaseModel, SoftmaxLocationModel
 import datetime
@@ -28,7 +28,7 @@ class BaseModelTrainer(object):
 
 
         if self.model_type == "basic":
-            self.dataset = create_dataset(model_dir, 128, vocab, 10, (300, 300, 3), int(1e5))
+            self.dataset = create_dataset(model_dir, 64, vocab, 10, (300, 300, 3), int(1e5))
             self.baseModel = BaseModel(screen_shape=(300, 300), vocab=vocab, config=config)
         elif self.model_type == "softmax":
             self.baseModel = SoftmaxLocationModel(screen_shape=(300,300), vocab=vocab, config=config)
@@ -41,7 +41,7 @@ class BaseModelTrainer(object):
         self.baseModel.model.compile(optimizer=self.optimizer,
                 loss=self.get_loss(),
                 loss_weights=self.get_loss_weights(),
-                metrics=[self.get_metric()])
+                metrics=self.get_metric())
 
     def train(self, epochs=100, callbacks=[], steps_per_epoch=100):
         self.dataset = self.dataset.repeat(epochs)
@@ -56,10 +56,7 @@ class BaseModelTrainer(object):
         return self.baseModel.get_loss_weights()
 
     def get_metric(self):
-        if self.model_type == "basic":
-            return tf.keras.metrics.MeanSquaredError()
-        elif self.model_type == "softmax":
-            return "accuracy"
+        return self.baseModel.get_metric()
 
 parser = argparse.ArgumentParser(description="BaseModelTrainer settings")
 parser.add_argument("--model_name", dest="model_name", action="store",

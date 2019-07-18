@@ -28,7 +28,7 @@ class ScreenVisualizerCallback(tf.keras.callbacks.Callback):
 
 def screenVisualizer(img, bounding_box, label, epoch, logdir, prefix):
     for i, bb in enumerate(bounding_box):
-        colors = (255, 0, 0)
+        color = (255, 0, 0)
         if label[i] in colors:
             color = colors[label[i]]
         cv2.rectangle(img, (bb[0], bb[1]), (bb[2], bb[3]), color, 1)
