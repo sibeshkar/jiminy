@@ -76,7 +76,8 @@ class BaseModel():
         self.decoder_model.add(tf.keras.layers.LSTM(self.config["lm_lstm_size"], return_sequences=False))
         decoder_model_output = self.decoder_model(decoder_input)
 
-        tag_bounding_box = tf.keras.layers.Dense(4, activation='sigmoid')(decoder_model_output) * tf.convert_to_tensor([w, h, w, h], dtype=tf.float32)
+        tag_bounding_box = tf.keras.layers.Dense(512, activation='relu')(decoder_model_output)
+        tag_bounding_box = tf.keras.layers.Dense(4,activation=None)(tag_bounding_box)
         tag_output = tf.keras.layers.Dense(self.tag_vocab_size, activation='softmax')(decoder_model_output)
         self.decoder_output = tf.keras.layers.concatenate(inputs=[tag_output, tag_bounding_box], axis=-1)
         self.model = tf.keras.Model(inputs=[self.image_input, self.tag_input],

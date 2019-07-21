@@ -43,6 +43,8 @@ def load_from_file(fname, vocab):
     img = cv2.imread(img_path, cv2.IMREAD_COLOR)
     img = np.flip(img, axis=-1)
     target_list = []
+    target_list.append(np.concatenate([np.array(vocab.to_sym(["START"])),
+        np.array([0, 0, 0, 0], dtype=np.int64)]))
     for obj in data['base_object_list']:
         tag = np.array(vocab.to_sym([obj['objectType']]))
         boundingBox = np.array(list(obj['boundingBox'].values()))
@@ -130,10 +132,50 @@ def create_dataset(dir_name, batch_size, vocab, max_target_length, screen_shape,
     dataset = dataset.prefetch(1000*batch_size)
     return dataset
 
+def convert_to_standard_format(fileList, output_fname, vocab):
+    for i in range(0, len(fileList), 100):
+        fdata = [convert_file_to_standard_format(fname, vocab) for fname in fileList[i:i+100]]
+        with open(output_fname, mode="a") as f:
+            f.write("\n".join(fdata))
+            f.write("\n")
+
+
+def convert_file_to_standard_format(fname, vocab):
+    assert not dataroot is None, "JIMINY_DATAROOT Environment variable must be set"
+
+    data_path = dataroot + "/logdir/" + fname
+    assert os.path.exists(data_path), "Data Loader File does not exist: {}".format(data_path)
+
+    with open(data_path, mode='r') as f:
+        data = json.load(f)
+        data = json.loads(data)
+
+    img_path = os.getenv("JIMINY_DATAROOT") + data["screenshot_img_path"]
+
+    target_list = []
+    target_list.append(np.concatenate([np.array([0, 0, 0, 0], dtype=np.int64),
+        np.array(vocab.to_sym(["START"])),
+        ]))
+    for obj in data['base_object_list']:
+        tag = np.array(vocab.to_sym([obj['objectType']]))
+        boundingBox = np.array(list(obj['boundingBox'].values())).astype(np.int64)
+        target_list.append(np.concatenate([boundingBox, tag]))
+    target_list.append(np.concatenate([np.array([0, 0, 0, 0], dtype=np.int64),
+        np.array(vocab.to_sym(["END"])),
+        ]))
+
+    data_string = "{} ".format(img_path)
+
+    for target in target_list:
+        data_string += "{} ".format(",".join([str(t) for t in target]))
+
+    return data_string
 
 if __name__ == "__main__":
-    vocab = Vocabulary(["text","input", "checkbox", "button", "click"])
+    vocab = Vocabulary(["START","text","input", "checkbox", "button", "click", "END"])
     dataset = create_dataset("logdir", 32, vocab, 10, (300, 300,3))
-    for e in dataset.take(4):
-        print(e[1])
-        print([v.shape for v in e])
+    print(dataset)
+
+    flist = os.listdir(dataroot + "/logdir")
+    flist = [f for f in flist if f[-5:] == ".json"]
+    convert_to_standard_format(flist, "output.test", vocab)
