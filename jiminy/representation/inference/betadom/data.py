@@ -43,6 +43,8 @@ def load_from_file(fname, vocab):
     img = cv2.imread(img_path, cv2.IMREAD_COLOR)
     img = np.flip(img, axis=-1)
     target_list = []
+    target_list.append(np.concatenate([np.array(vocab.to_sym(["START"])),
+        np.array([0, 0, 0, 0], dtype=np.int64)]))
     for obj in data['base_object_list']:
         tag = np.array(vocab.to_sym([obj['objectType']]))
         boundingBox = np.array(list(obj['boundingBox'].values()))
@@ -51,7 +53,7 @@ def load_from_file(fname, vocab):
         np.array([0, 0, 0, 0], dtype=np.int64)]))
     return img, target_list
 
-def generate_targets(img, target_list, max_target_length=10, depth=10):
+def generate_targets(img, target_list, max_target_length=10, depth=10, screen_shape=None):
     img_list = []
     generated_target_list = []
     end_target_list = []
@@ -74,13 +76,19 @@ def generate_targets(img, target_list, max_target_length=10, depth=10):
 
     target_dataset = tf.convert_to_tensor(end_target_list[:,0].astype(np.int64), dtype=tf.int64)
     target_dataset = tf.one_hot(target_dataset, depth=depth, on_value=1.0, off_value=0.)
-    target_bb_dataset = tf.convert_to_tensor(end_target_list[:,1:].astype(np.float32), dtype=tf.float32)
-    return tf.tuple([img_dataset, generated_target_dataset, target_dataset, target_bb_dataset])
 
-def transform_to_slices(vocab, max_target_length=10):
+    if screen_shape is None:
+        target_bb_dataset = tf.convert_to_tensor(end_target_list[:,1:].astype(np.float32), dtype=tf.float32)
+        return tf.tuple([img_dataset, generated_target_dataset, target_dataset, target_bb_dataset])
+
+    target_bb_dataset = [tf.convert_to_tensor(end_target_list[:,i+1].astype(np.int64), dtype=tf.int64) for i in range(4)]
+    target_bb_dataset = [tf.one_hot(target_bb_dataset, depth=screen_shape[i%2], on_value=1.0, off_value=0.) for i in range(4)]
+    return tf.tuple([img_dataset, generated_target_dataset, target_dataset] + target_bb_dataset)
+
+def transform_to_slices(vocab, max_target_length=10, screen_shape=None):
     def transform(fname):
         img, target_list = load_from_file(fname, vocab)
-        return generate_targets(img, target_list, max_target_length=10, depth=vocab.length)
+        return generate_targets(img, target_list, max_target_length=10, depth=vocab.length, screen_shape=screen_shape)
     return transform
 
 def tf_py_function(fn, types, shapes):
@@ -98,24 +106,76 @@ def tf_py_function(fn, types, shapes):
         return tf.data.Dataset.zip((input_dataset, output_dataset))
     return thunked_fn
 
-def create_dataset(dir_name, batch_size, vocab, max_target_length, screen_shape, num_files=10000):
+def create_dataset(dir_name, batch_size, vocab, max_target_length, screen_shape, num_files=10000, one_hot=False):
     assert vocab.to_sym(["START"]) == [0], "Expected first value in Vocab to be START, got: {}".format(vocab.to_key([0])[0])
     dir_name = dataroot + dir_name
     assert os.path.exists(dir_name), "Path does not exist: {}".format(dir_name)
 
     files = tf.data.Dataset.list_files(dir_name + "/*.json", shuffle=True).take(num_files)
-    dataset = files.flat_map(tf_py_function(fn=transform_to_slices(vocab, max_target_length),
-        types=(tf.float32, tf.int64, tf.float32, tf.float32),
-        shapes=(screen_shape, (max_target_length,), (vocab.length,), (4,))))
+    if one_hot:
+        dataset = files.flat_map(tf_py_function(fn=transform_to_slices(vocab, max_target_length, screen_shape),
+            types=(tf.float32, tf.int64, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32),
+            shapes=(screen_shape, (max_target_length,), (vocab.length,),
+                (screen_shape[0],), (screen_shape[1],), (screen_shape[0],), (screen_shape[1],)
+                )
+            ))
+    else:
+        dataset = files.flat_map(tf_py_function(fn=transform_to_slices(vocab, max_target_length, screen_shape=None),
+            types=(tf.float32, tf.int64, tf.float32, tf.float32),
+            shapes=(screen_shape, (max_target_length,), (vocab.length,),
+                (4,)
+                )
+            ))
+
     dataset = dataset.shuffle(batch_size // 4)
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(1000*batch_size)
     return dataset
 
+def convert_to_standard_format(fileList, output_fname, vocab):
+    for i in range(0, len(fileList), 100):
+        fdata = [convert_file_to_standard_format(fname, vocab) for fname in fileList[i:i+100]]
+        with open(output_fname, mode="a") as f:
+            f.write("\n".join(fdata))
+            f.write("\n")
+
+
+def convert_file_to_standard_format(fname, vocab):
+    assert not dataroot is None, "JIMINY_DATAROOT Environment variable must be set"
+
+    data_path = dataroot + "/logdir/" + fname
+    assert os.path.exists(data_path), "Data Loader File does not exist: {}".format(data_path)
+
+    with open(data_path, mode='r') as f:
+        data = json.load(f)
+        data = json.loads(data)
+
+    img_path = os.getenv("JIMINY_DATAROOT") + data["screenshot_img_path"]
+
+    target_list = []
+    target_list.append(np.concatenate([np.array([0, 0, 0, 0], dtype=np.int64),
+        np.array(vocab.to_sym(["START"])),
+        ]))
+    for obj in data['base_object_list']:
+        tag = np.array(vocab.to_sym([obj['objectType']]))
+        boundingBox = np.array(list(obj['boundingBox'].values())).astype(np.int64)
+        target_list.append(np.concatenate([boundingBox, tag]))
+    target_list.append(np.concatenate([np.array([0, 0, 0, 0], dtype=np.int64),
+        np.array(vocab.to_sym(["END"])),
+        ]))
+
+    data_string = "{} ".format(img_path)
+
+    for target in target_list:
+        data_string += "{} ".format(",".join([str(t) for t in target]))
+
+    return data_string
 
 if __name__ == "__main__":
-    vocab = Vocabulary(["text","input", "checkbox", "button", "click"])
+    vocab = Vocabulary(["START","text","input", "checkbox", "button", "click", "END"])
     dataset = create_dataset("logdir", 32, vocab, 10, (300, 300,3))
-    for e in dataset.take(4):
-        print(e[1])
-        print([v.shape for v in e])
+    print(dataset)
+
+    flist = os.listdir(dataroot + "/logdir")
+    flist = [f for f in flist if f[-5:] == ".json"]
+    convert_to_standard_format(flist, "output.test", vocab)
