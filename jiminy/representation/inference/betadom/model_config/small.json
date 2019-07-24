@@ -1,0 +1,6 @@
+{
+    "last_conv" : 128, 
+    "lm_lstm_size" : 256,
+    "lm_lstm_layer_num": 1,
+    "decoder_middle_lstm": false
+}

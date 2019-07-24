@@ -19,7 +19,7 @@ import numpy as np
 import time
 # tf.enable_eager_execution()
 
-class BaseModel():
+class SoftmaxLocationModel():
     def __init__(self, max_length=10,
             vocab=None,
             screen_shape=(160,210),
@@ -76,12 +76,10 @@ class BaseModel():
         self.decoder_model.add(tf.keras.layers.LSTM(self.config["lm_lstm_size"], return_sequences=False))
         decoder_model_output = self.decoder_model(decoder_input)
 
-        tag_bounding_box = tf.keras.layers.Dense(512, activation='relu')(decoder_model_output)
-        tag_bounding_box = tf.keras.layers.Dense(4,activation=None)(tag_bounding_box)
+        tag_bounding_box = [tf.keras.layers.Dense(size, activation='softmax')(decoder_model_output) for size in [w,h,w,h]]
         tag_output = tf.keras.layers.Dense(self.tag_vocab_size, activation='softmax')(decoder_model_output)
-        self.decoder_output = tf.keras.layers.concatenate(inputs=[tag_output, tag_bounding_box], axis=-1)
         self.model = tf.keras.Model(inputs=[self.image_input, self.tag_input],
-                outputs=[tag_bounding_box, tag_output])
+                outputs=tag_bounding_box + [tag_output])
 
 
     def forward_pass(self, img):
@@ -94,8 +92,9 @@ class BaseModel():
         while (tag_list[-1] != "END") and count < self.max_length:
             tag_list_sym = self.vocab.to_sym(tag_list)
             tags = tf.reshape(tf.convert_to_tensor(tag_list_sym, dtype=tf.int64), [1, self.max_length])
-            bb,tag = self.model([img_tensor, tags])
-            bb_list.append(bb.numpy()[0])
+            bb_y2, bb_x2, bb_y1, bb_x1,tag = self.model([img_tensor, tags])
+            bb = [bb_x1.numpy()[0], bb_y1.numpy()[0], bb_x2.numpy()[0], bb_y2.numpy()[0]]
+            bb_list.append(np.argmax(bb, axis=-1))
             last_tag = self.vocab.to_key(np.argmax(tag.numpy(), axis=-1))
             tag_list = tag_list[1:] + last_tag
             count += 1
@@ -112,13 +111,13 @@ class BaseModel():
         return tag_list, bb_list
 
     def get_loss(self):
-        return ["mse", "categorical_crossentropy"]
+        return ["categorical_crossentropy" for _ in range(5)]
 
     def get_loss_weights(self):
-        return [1e-1, 0.5]
+        return [1. for _ in range(5)]
 
     def get_metric(self):
-        return [["mae"], ["accuracy"]]
+        return "accuracy"
 
 if __name__ == "__main__":
     vocab = Vocabulary(["START", "text","input", "checkbox", "button", "click", "END"])
@@ -126,7 +125,7 @@ if __name__ == "__main__":
     baseModel.create_model()
     print(baseModel.model.summary())
 
-    dataset = create_dataset("logdir", 32, vocab, 10, (300, 300,3))
+    dataset = create_dataset("logdir", 32, vocab, 10, (300, 300,3), one_hot=True)
 
     for (X, y) in dataset.take(1):
         print(X)
