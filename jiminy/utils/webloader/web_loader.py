@@ -6,7 +6,7 @@ class WebLoader:
     def __init__(self, browser='Firefox'):
         if browser == 'Firefox':
             options = Options()
-            options.headless = True
+            # options.headless = True
             self.driver = webdriver.Firefox(options=options)
         else:
             raise ValueError("Unknown broswer configuration: {}".format(browser))

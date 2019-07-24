@@ -18,6 +18,7 @@ def checkHidden(webDriverObject, objectInContext):
     size = objectInContext.size['height'] * objectInContext.size['width']
     if size == 0.0:
         return True
+    return False
 
 def checkInScreen(seleniumObject, screen_shape):
     if seleniumObject.location['x'] > screen_shape[0]:
