@@ -51,8 +51,8 @@ def saveScreenToFile(seleniumWebDriver):
     fileString = datetime.datetime.now().strftime("%Y%m%d-%H%M%S%f")
     saveString = "{}/{}.png".format(DIRNAME, fileString)
     seleniumWebDriver.get_screenshot_as_file(saveString)
-    img = cv2.imread(saveString, 0)
-    img = img[:300, :300]
+    img = cv2.imread(saveString)
+    img = img[:300, :160]
     cv2.imwrite(saveString, img)
     return saveString
 
