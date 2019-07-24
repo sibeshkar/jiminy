@@ -153,16 +153,10 @@ def convert_file_to_standard_format(fname, vocab):
     img_path = os.getenv("JIMINY_DATAROOT") + data["screenshot_img_path"]
 
     target_list = []
-    target_list.append(np.concatenate([np.array([0, 0, 0, 0], dtype=np.int64),
-        np.array(vocab.to_sym(["START"])),
-        ]))
     for obj in data['base_object_list']:
         tag = np.array(vocab.to_sym([obj['objectType']]))
         boundingBox = np.array(list(obj['boundingBox'].values())).astype(np.int64)
         target_list.append(np.concatenate([boundingBox, tag]))
-    target_list.append(np.concatenate([np.array([0, 0, 0, 0], dtype=np.int64),
-        np.array(vocab.to_sym(["END"])),
-        ]))
 
     data_string = "{} ".format(img_path)
 

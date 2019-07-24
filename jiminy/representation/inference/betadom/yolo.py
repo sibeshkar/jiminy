@@ -8,6 +8,7 @@ YOLO_v3 Model Defined in tensorflow.keras.
 from functools import wraps, reduce
 
 import numpy as np
+import colorsys
 import tensorflow as tf
 from keras import backend as K
 from tensorflow.keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D
@@ -17,9 +18,11 @@ from tensorflow.keras.layers import BatchNormalization, Lambda
 from tensorflow.keras import Model, Input
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import l2
-from PIL import Image
+from PIL import Image, ImageFont, ImageDraw
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 import datetime
+import argparse
+import os
 
 @wraps(Conv2D)
 def DarknetConv2D(*args, **kwargs):
@@ -561,9 +564,11 @@ class YoloModel():
     def __init__(self, annotation_path,
         log_dir = 'logs/{}/'.format(datetime.datetime.now().strftime("%H-%M-%S")),
         classes_path = '/home/prannayk/keras-yolo3/model_data/jiminy_classes.txt',
-        anchors_path = '/home/prannayk/keras-yolo3/model_data/yolo_anchors.txt',
+        anchors_path = '/home/prannayk/keras-yolo3/model_data/jiminy_anchors.txt',
         input_shape=(288, 288),
-        validation_split=1e-1):
+        validation_split=1e-1,
+        score=0.4,
+        iou=0.45):
         self.annotation_path = annotation_path
         self.log_dir = log_dir
         self.class_names = get_classes(classes_path)
@@ -571,6 +576,8 @@ class YoloModel():
         self.anchors = get_anchors(anchors_path)
         self.input_shape = input_shape
         self.validation_split = validation_split
+        self.iou = iou
+        self.score = score
 
 
     def freeze_model_weights(self, model=None, freeze_body=2):
@@ -639,7 +646,7 @@ class YoloModel():
         self.model.save_weights(self.log_dir + 'trained_weights_stage_1.h5')
 
     def train_stage2(self, learning_rate, batch_size=32, epochs=50, callbacks=None):
-        self.freeze_model_weights(0)
+        self.freeze_model_weights(freeze_body=0)
         self.model.compile(optimizer=Adam(learning_rate=learning_rate),
                 loss={'yolo_loss': lambda y_true, y_pred: y_pred})
         self.fit(batch_size, epochs, callbacks=callbacks)
@@ -683,7 +690,110 @@ class YoloModel():
         if n==0 or batch_size<=0: return None
         return self.data_generator(data, batch_size)
 
+    def load_model(self, model_path):
+        print(model_path)
+        self.model_body.load_weights(model_path, by_name=True)
+        self.input_image_shape = K.placeholder(shape=(2, ))
+        self.boxes, self.scores, self.classes = yolo_eval(self.model_body.output, self.anchors,
+                len(self.class_names), self.input_image_shape,
+                score_threshold=self.score, iou_threshold=self.iou)
+        # Generate colors for drawing bounding boxes.
+        hsv_tuples = [(x / len(self.class_names), 1., 1.)
+                      for x in range(len(self.class_names))]
+        self.colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
+        self.colors = list(
+            map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)),
+                self.colors))
+        np.random.seed(10101)  # Fixed seed for consistent colors across runs.
+        np.random.shuffle(self.colors)  # Shuffle colors to decorrelate adjacent classes.
+        np.random.seed(None)  # Reset seed to default.
+
+    def detect_for_image(self, image):
+        if self.input_shape != (None, None):
+            assert self.input_shape[0]%32 == 0, 'Multiples of 32 required'
+            assert self.input_shape[1]%32 == 0, 'Multiples of 32 required'
+            boxed_image = letterbox_image(image, tuple(reversed(self.input_shape)))
+        else:
+            new_image_size = (image.width - (image.width % 32),
+                              image.height - (image.height % 32))
+            boxed_image = letterbox_image(image, new_image_size)
+        image_data = np.array(boxed_image, dtype='float32')
+
+        image_data /= 255.
+        image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
+
+        self.sess = K.get_session()
+        self.sess.run(tf.global_variables_initializer())
+        out_boxes, out_scores, out_classes = self.sess.run(
+            [self.boxes, self.scores, self.classes],
+            feed_dict={
+                self.model_body.input: image_data,
+                self.input_image_shape: [image.size[1], image.size[0]],
+                K.learning_phase(): 0
+            })
+
+        print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
+        return self.draw(boxed_image, out_boxes, out_scores, out_classes)
+
+    def draw(self, boxed_image, out_boxes, out_scores, out_classes):
+        font = ImageFont.truetype(font='font/FiraMono-Medium.otf',
+                    size=np.floor(3e-2 * boxed_image.size[1] + 0.5).astype('int32'))
+        thickness = (boxed_image.size[0] + boxed_image.size[1]) // 300
+
+        for i, c in reversed(list(enumerate(out_classes))):
+            predicted_class = self.class_names[c]
+            box = out_boxes[i]
+            score = out_scores[i]
+
+            label = '{} {:.2f}'.format(predicted_class, score)
+            draw = ImageDraw.Draw(boxed_image)
+            label_size = draw.textsize(label, font)
+
+            top, left, bottom, right = box
+            top = max(0, np.floor(top + 0.5).astype('int32'))
+            left = max(0, np.floor(left + 0.5).astype('int32'))
+            bottom = min(boxed_image.size[1], np.floor(bottom + 0.5).astype('int32'))
+            right = min(boxed_image.size[0], np.floor(right + 0.5).astype('int32'))
+            print(label, (left, top), (right, bottom))
+
+            if top - label_size[1] >= 0:
+                text_origin = np.array([left, top - label_size[1]])
+            else:
+                text_origin = np.array([left, top + 1])
+
+            for i in range(thickness):
+                draw.rectangle(
+                    [left + i, top + i, right - i, bottom - i],
+                    outline=self.colors[c])
+            draw.rectangle(
+                [tuple(text_origin), tuple(text_origin + label_size)],
+                fill=self.colors[c])
+            draw.text(text_origin, label, fill=(0, 0, 0), font=font)
+            del draw
+
+        return boxed_image
+
+arg_parser = argparse.ArgumentParser("Yolo model")
+arg_parser.add_argument("--test", dest="test", action="store_const", const=True, help="Running in test mode",
+        default=False)
+arg_parser.add_argument("--model_path", dest="model_path",
+        type=str, default="random.h5")
+arg_parser.add_argument("--img_path", dest="img_path",
+        type=str, default="random.png")
+arg_parser.add_argument("--json_path", dest="json_path",
+        type=str, default="random.png")
+
+
 if __name__ == "__main__":
+    args = arg_parser.parse_args()
     ym = YoloModel(annotation_path="/home/prannayk/keras-yolo3/train.txt")
     ym.create_model()
-    ym.train_stage1(learning_rate=1e-4)
+    if not args.test:
+        ym.train_stage1(learning_rate=1e-4)
+
+    ym.load_model(args.model_path)
+    for img in os.listdir(args.img_path):
+        img_path = os.path.join(args.img_path, img)
+        img = Image.open(img_path)
+        img_ret = ym.detect_for_image(img)
+        img_ret.save("detected-{}".format(img_path))
