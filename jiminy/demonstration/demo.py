@@ -6,6 +6,11 @@ from __future__ import print_function
 import demo_pb2
 import sys
 import heapq
+from jiminy import utils
+from jiminy import spaces
+from jiminy import utils
+from jiminy.vncdriver import fbs_reader, vnc_proxy_server, vnc_client
+from jiminy import spaces as vnc_spaces
 
 filepath = 'recordings/recording_1563174043/proto.rbs'
 
@@ -170,6 +175,19 @@ class MergedEventReader(object):
 
         self.timestamp = timestamp
         return data
+
+class FBSEventReader(object):
+    def __init__(self, filepath, paint_cursor=False):
+        self.paint_cursor = paint_cursor
+        observation_reader = FBUpdateReader(filepath)
+        self.error_buffer = utils.ErrorBuffer()
+        action_reader = PointerEventReader(filepath)
+        self.merged_reader = MergedEventReader(observation_reader, action_reader)
+        self.pixel_format = []
+        self.observation_processor = vnc_client.VNCClient()
+
+
+    
 
 
 mer = MergedEventReader(PointerEventReader(filepath),FBUpdateReader(filepath))

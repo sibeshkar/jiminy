@@ -7,7 +7,6 @@ from PIL import Image
 if __name__ == "__main__":
     env = gym.make("VNC.Core-v0")
     env = jiminy.wrappers.experimental.SoftmaxClickMouse(env)
-    env = wob_vnc.MiniWoBCropper(env)
 
     env.configure(env='sibeshkar/wob-v1', task='ClickButton', remotes='vnc://localhost:5901+15901')
     obs = env.reset()
@@ -31,7 +30,7 @@ if __name__ == "__main__":
             continue
         print("Sampled action: ", a)
         print("Response are of index:", idx)
-        print("Observation", obs[0])
+        print("Observation", obs)
         print("Reward", reward)
         print("Is done", is_done)
         print("Info", info)
