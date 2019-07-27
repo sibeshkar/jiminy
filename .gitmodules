@@ -1,0 +1,3 @@
+[submodule "jiminy/protos"]
+	path = jiminy/protos
+	url = git@github.com:prannayk/jiminy-protos
