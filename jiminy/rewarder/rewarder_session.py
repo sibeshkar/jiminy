@@ -61,7 +61,7 @@ class RewarderSession(object):
                 if client is not None:
                     reactor.callFromThread(client.close, reason=reason)
 
-    def connect(self, name, address, label, password, env_id=None, seed=None, fps=60,
+    def connect(self, name, address, label, password, env_id=None, task=None, seed=None, fps=60,
                 start_timeout=None, observer=False, skip_network_calibration=False):
         if name in self.reward_buffers:
             self.close(name, reason='closing previous connection to reconnect with the same name')
@@ -76,6 +76,7 @@ class RewarderSession(object):
                                name=name,
                                address=address,
                                env_id=env_id,
+                               task=task,
                                seed=seed,
                                fps=fps,
                                i=self.i,
@@ -99,7 +100,7 @@ class RewarderSession(object):
 
     # TODO: probably time to convert to kwargs
     @defer.inlineCallbacks
-    def _connect(self, name, address, env_id, seed, fps, i, network, env_status, reward_buffer,
+    def _connect(self, name, address, env_id, task, seed, fps, i, network, env_status, reward_buffer,
                  label, password, start_timeout,
                  observer, skip_network_calibration,
                  attempt=0, elapsed_sleep_time=0,
@@ -188,6 +189,8 @@ class RewarderSession(object):
 
             retry_msg = ''
 
+            #reply_launch = yield self._send_env_launch(client, episode_id=0, env_id='sibeshkar/wob-v0')
+
             if factory.arg_env_id is not None:
                 # We aren't picky about episode ID: we may have
                 # already receieved an env.describe message
@@ -195,7 +198,23 @@ class RewarderSession(object):
                 # we don't need to bump post.
                 #
                 # tl;dr hardcoding 0.0 here avoids a double reset.
-                reply = yield self._send_env_reset(client, seed=seed, episode_id='0')
+                #TODO: Add env.launch here
+                reply_launch = yield self._send_env_launch(client, episode_id=0, env_id=env_id)
+            else:
+                # No env_id requested, so we just proceed without a reset
+                reply_launch = None
+
+            if factory.arg_env_id is not None:
+                # We aren't picky about episode ID: we may have
+                # already receieved an env.describe message
+                # telling us about a resetting environment, which
+                # we don't need to bump post.
+                #
+                # tl;dr hardcoding 0.0 here avoids a double reset.
+                #TODO: Add env.launch here
+                logger.info("Reset is happening")
+                
+                reply = yield self._send_env_reset(client, seed=seed, episode_id=0, env_id=env_id+'/'+task)
             else:
                 # No env_id requested, so we just proceed without a reset
                 reply = None
@@ -256,6 +275,14 @@ class RewarderSession(object):
             seed=seed,
             fps=client.factory.arg_fps,
             episode_id=episode_id)
+    
+    def _send_env_launch(self, client, episode_id=None, env_id=None):
+        logger.info('[%s] Sending launch for env_id=%s fps=%s', client.factory.label, client.factory.arg_env_id, client.factory.arg_fps)
+        return client.send_launch(
+            env_id=client.factory.arg_env_id if env_id is None else env_id,
+            fps=client.factory.arg_fps,
+            episode_id=episode_id)
+
 
     def pop(self, warn=True, peek_d=None):
         reward_d = {}

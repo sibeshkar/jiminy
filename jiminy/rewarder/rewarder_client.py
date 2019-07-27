@@ -25,6 +25,7 @@ class RewarderClient(websocket.WebSocketClientProtocol):
 
         self._reset = None
         self._initial_reset = False
+        self._initial_launch = False
 
         self._connection_result = defer.Deferred()
 
@@ -34,17 +35,34 @@ class RewarderClient(websocket.WebSocketClientProtocol):
             'env_id': env_id,
             'fps': fps,
             'episode_id': episode_id,
-        }
+        } #TODO: Change this to accomodate task as a separate field, from env_id
 
         return self.send('v0.env.reset', {
             'seed': seed,
             'env_id': env_id,
             'fps': fps,
         }, {'episode_id': episode_id}, expect_reply=True)
-
+    
     def _finish_reset(self, episode_id):
         extra_logger.info('[%s] Running finish_reset: %s', self.factory.label, episode_id)
         self.reward_buffer.reset(episode_id)
+
+    def send_launch(self, env_id, episode_id, fps=None):
+        self._initial_launch = True
+
+        self._launch = {
+            'env_id': env_id,
+            'fps': fps,
+        }
+
+        return self.send('v0.env.launch', {
+            'env_id': env_id,
+            'fps': fps,
+        }, expect_reply=False) #TODO : Fix this to expect_reply=True
+
+    def _finish_launch(self, episode_id):
+        extra_logger.info('[%s] Running finish_launch:', self.factory.label)
+        #self.reward_buffer.launch(episode_id)
 
     def onConnect(self, request):
         self._message_id = 0
@@ -91,7 +109,7 @@ class RewarderClient(websocket.WebSocketClientProtocol):
         self.sendMessage(ujson.dumps(payload).encode('utf-8'), False)
 
         if expect_reply:
-            d = defer.Deferred()
+            d = defer.Deferred() #TODO: Figure out why this is not working for env.launch
             self._requests[id] = (payload, d)
             return d
         else:
@@ -121,10 +139,12 @@ class RewarderClient(websocket.WebSocketClientProtocol):
             done = body['done']
             info = body['info']
             extra_logger.debug('[%s] Received %s: reward=%s done=%s info=%s episode_id=%s', self.factory.label, method, reward, done, info, episode_id)
+            #print("Reward response is", response) ##Temporary debug
             pyprofile.incr('rewarder_client.reward', reward)
             if done:
-                pyprofile.incr('rewarder_client.done')
-            self.reward_buffer.push(episode_id, reward, done, info)
+                pyprofile.incr('rewarder_client.done') 
+            self.reward_buffer.push(episode_id, reward, done, {}) #TODO: Blank info needs to be fixed
+            #self.reward_buffer.push(episode_id, reward, done, info) Temporary debug
         elif method == 'v0.env.text':
             episode_id = headers['episode_id']
             text = body['text']
@@ -146,6 +166,9 @@ class RewarderClient(websocket.WebSocketClientProtocol):
         elif method == 'v0.reply.env.reset':
             episode_id = headers['episode_id']
             self._finish_reset(episode_id)
+        elif method == 'v0.reply.env.launch':
+            episode_id = headers['episode_id']
+            self._finish_launch(episode_id)
         elif method in ['v0.reply.error', 'v0.reply.control.ping']:
             assert headers.get('parent_message_id') is not None
         elif method == 'v0.connection.close':
@@ -160,7 +183,7 @@ class RewarderClient(websocket.WebSocketClientProtocol):
             return
 
         parent_id = headers.get('parent_message_id')
-        if parent_id is not None:
+        if parent_id:
             try:
                 spec = self._requests.pop(parent_id)
             except KeyError:

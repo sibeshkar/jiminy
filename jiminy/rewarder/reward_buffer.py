@@ -230,6 +230,11 @@ class RewardBuffer(object):
             self._current_episode_id = episode_id
             self.push_info(episode_id, {'env_status.reset.episode_id': episode_id})
 
+    def launch(self, episode_id):
+        # with self.cv:
+        #     self.push_info(episode_id, {'env_status.launch.episode_id': episode_id})
+        pass
+        
     def _max_id(self):
         valid_ids = self._valid_ids()
         if len(valid_ids) > 0:
