@@ -49,8 +49,6 @@ class RewardState(object):
         self.count += 1
         self.reward += reward
 
-        
-
         # Consider yourself done whenever a reward crosses episode
         # boundaries.
         # if reward is 0:
@@ -67,7 +65,7 @@ class RewardState(object):
     
     def pop_obs(self):
         observation = self._observation
-        self._observation = 0
+        #self._observation = 0
         return observation
 
     def pop_info(self):
@@ -110,7 +108,7 @@ class RewardState(object):
 
     def set_observation(self, observation):
         self._observation = observation
-        #print("[URGENT] Have set observation at", self._observation)
+        print("[URGENT] Have set observation at", self._observation)
         
 
 # Buffers up incoming rewards
@@ -281,6 +279,8 @@ class RewardBuffer(object):
             extra_logger.warn('[%s] WARNING: RewardBuffer: while advancing from %s, None was in reward state: %s', self.label, completed_episode_id, self._reward_state)
 
         max_id = self._max_id()
+
+        print("[ADVANCING STATE] completed episode ID: %d, max id : %d, current id: %d", completed_episode_id, max_id, self._current_episode_id)
         if max_id is not None:
             self._current_episode_id = max_id
             if env_status.compare_ids(completed_episode_id, self._current_episode_id) >= 0:
