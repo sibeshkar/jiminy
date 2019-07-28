@@ -153,6 +153,7 @@ class RewarderClient(websocket.WebSocketClientProtocol):
         elif method == 'v0.env.observation':
             episode_id = headers['episode_id']
             jsonable = body['observation']
+            #print('[%s] Received %s: observation=%s episode_id=%s', self.factory.label, method, jsonable, episode_id)
             extra_logger.debug('[%s] Received %s: observation=%s episode_id=%s', self.factory.label, method, jsonable, episode_id)
             self.reward_buffer.set_observation(episode_id=episode_id, observation=jsonable)
         elif method == 'v0.env.describe':
@@ -162,6 +163,7 @@ class RewarderClient(websocket.WebSocketClientProtocol):
             fps = body['fps']
             extra_logger.info('[%s] Received %s: env_id=%s env_state=%s episode_id=%s',
                               self.factory.label, method, env_id, env_state, episode_id)
+            #print("DESCRIBE message received :", headers, body)
             self.reward_buffer.set_env_info(env_state, env_id=env_id, episode_id=episode_id, fps=fps)
         elif method == 'v0.reply.env.reset':
             episode_id = headers['episode_id']

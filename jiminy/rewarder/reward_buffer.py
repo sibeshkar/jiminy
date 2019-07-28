@@ -49,44 +49,69 @@ class RewardState(object):
         self.count += 1
         self.reward += reward
 
+        
+
         # Consider yourself done whenever a reward crosses episode
         # boundaries.
+        # if reward is 0:
+        #     done = 0
+
+        #print("Pushed reward: %d, done: %d, count: %d, episode_id: %f, time: %f " % (self.reward, done, self.count,self._episode_id, time.time()))
+
         self.push_done(done, info)
 
     def pop_text(self):
         text = self.text
         self.text = []
         return text
+    
+    def pop_obs(self):
+        observation = self._observation
+        self._observation = 0
+        return observation
 
     def pop_info(self):
         info = self.info
         self.info = {}
         info['env.text'] = self.pop_text()
-        if self._observation is not None:
+        #if self._observation is not None:
             # Only used for the debugging gym-core envs with
             # rewarder_observation set.
-            info['rewarder.observation'] = (self._observation, self._episode_id)
+            #print("[URGENT]Have set observation at", self._observation)
+        info['rewarder.observation'] = self.pop_obs()
+        
         info['env_status.episode_id'] = self._episode_id
         info['env_status.env_state'] = self._env_state
+
+        #print("[URGENT] Popping observation at", info)
+        
+        #self._observations = []
         return info
 
     def pop(self):
         info = self.pop_info()
+        
 
         count = self.count
         reward = self.reward
         done = self.done
 
+        #print('[%s] [URGENT] Popping reward %f and done %f and count %f from episode_id %s at time %f' % (self.label, self.reward, self.done, self.count,self._episode_id, time.time()))
+        
         self.count = 0
         self.reward = 0.
         self.done = False
 
         info['stats.reward.count'] = count
-        extra_logger.debug('[%s] RewardState: popping reward %s from episode_id %s', self.label, reward, self._episode_id)
+        #extra_logger.debug('[%s] RewardState: popping reward %s from episode_id %s', self.label, reward, self._episode_id)
+        #print('[%s] RewardState: popping reward %s and done %s from episode_id %s at time %f' % (self.label, reward, done, self._episode_id, time.time()))
+        
         return reward, done, info
 
     def set_observation(self, observation):
         self._observation = observation
+        #print("[URGENT] Have set observation at", self._observation)
+        
 
 # Buffers up incoming rewards
 class RewardBuffer(object):
@@ -144,7 +169,9 @@ class RewardBuffer(object):
 
     def set_observation(self, episode_id, observation):
         with self.cv:
+            #print("[URGENT]Have set observation at", self.reward_state(episode_id).observation)
             self.reward_state(episode_id).set_observation(observation)
+            pass
 
     def push_time(self, episode_id, remote_time, local_time):
         with self.cv:
