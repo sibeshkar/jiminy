@@ -11,7 +11,7 @@ if __name__ == "__main__":
     env.configure(env='sibeshkar/wob-v1', task='ClickButton', remotes='vnc://localhost:5901+15901')
     obs = env.reset()
     
-    time.sleep(3) #TODO: This needs to be unnecessary
+    time.sleep(4) #TODO: This needs to be unnecessary
 
     while True:
         a = env.action_space.sample()
@@ -22,15 +22,15 @@ if __name__ == "__main__":
         break
 
     for idx in range(5000):
-        time.sleep(0.1)
-        a = env.action_space.sample()
+        time.sleep(0.2)
+        #a = env.action_space.sample()
         obs, reward, is_done, info = env.step([a])
         if obs[0] is None:
             print("Env is resetting...")
             continue
         print("Sampled action: ", a)
         print("Response are of index:", idx)
-        print("Observation", obs)
+        print("Observation", obs[0]['dom'])
         print("Reward", reward)
         print("Is done", is_done)
         print("Info", info)
