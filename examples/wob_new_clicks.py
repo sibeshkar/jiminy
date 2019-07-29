@@ -9,7 +9,7 @@ if __name__ == "__main__":
     env = jiminy.wrappers.experimental.SoftmaxClickMouse(env)
     env = wob_vnc.MiniWoBCropper(env)
 
-    env.configure(env='sibeshkar/wob-v1', task='ClickButton', remotes='vnc://localhost:5901+15901')
+    env.configure(env='sibeshkar/wob-v0', task='ClickButton', remotes='vnc://localhost:5901+15901')
     obs = env.reset()
     
     time.sleep(3) #TODO: This needs to be unnecessary
@@ -23,8 +23,8 @@ if __name__ == "__main__":
         break
 
     for idx in range(5000):
-        time.sleep(0.1)
-        a = env.action_space.sample()
+        time.sleep(0.05)
+        #a = env.action_space.sample()
         obs, reward, is_done, info = env.step([a])
         if obs[0] is None:
             print("Env is resetting...")

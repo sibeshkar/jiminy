@@ -11,18 +11,16 @@ if __name__ == "__main__":
     env.configure(env='prannayk/wob-v1', task='ClickButton', remotes='vnc://localhost:5901+15901')
     obs = env.reset()
 
-    time.sleep(4) #TODO: This needs to be unnecessary
-
     while True:
         a = env.action_space.sample()
         obs, reward, is_done, info = env.step([a])
-        if obs[0] is None:
+        if obs[0]['dom'] is None:
             print("Env is still resetting...")
             continue
         break
 
     for idx in range(5000):
-        time.sleep(0.2)
+        time.sleep(0.05)
         #a = env.action_space.sample()
         obs, reward, is_done, info = env.step([a])
         if obs[0] is None:
