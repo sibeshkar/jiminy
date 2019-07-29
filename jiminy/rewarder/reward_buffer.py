@@ -108,7 +108,7 @@ class RewardState(object):
 
     def set_observation(self, observation):
         self._observation = observation
-        print("[URGENT] Have set observation at", self._observation)
+        #print("[URGENT] Have set observation at", self._observation)
         
 
 # Buffers up incoming rewards
@@ -132,6 +132,8 @@ class RewardBuffer(object):
             return self._reward_state[episode_id]
         except:
             extra_logger.info('[%s] RewardBuffer: Creating new RewardState for episode_id=%s', self.label, episode_id)
+            # if isinstance(episode_id, str):
+            #     print("Detected string instead of int in reward state method")
             reward_state = self._reward_state[episode_id] = RewardState(self.label, episode_id)
             if self._current_episode_id is None and not self._masked:
                 extra_logger.info('[%s] RewardBuffer advancing: No active episode, so activating episode_id=%s', self.label, episode_id)
@@ -157,6 +159,8 @@ class RewardBuffer(object):
                 extra_logger.info('[%s] RewardBuffer changing env_state: %s (env_id=%s) -> %s (env_id=%s) (episode_id: %s->%s, fps=%s, masked=%s, current_episode_id=%s)', self.label, self._remote_env_state, self._remote_env_id, env_state, env_id, self._remote_episode_id, episode_id, fps, self._masked, self._current_episode_id)
             else:
                 extra_logger.info('[%s] RewardBuffer: Initial env_state: %s (env_id=%s) (episode_id: %s, fps=%s, masked=%s, current_episode_id=%s)', self.label, env_state, env_id, episode_id, fps, self._masked, self._current_episode_id)
+
+            assert isinstance(episode_id, int), "episode ID variables should be int"
 
             self._remote_env_state = env_state
             self._remote_env_id = env_id
@@ -193,6 +197,11 @@ class RewardBuffer(object):
     def pop(self, peek=False):
         with self.cv:
             self.cv.notifyAll()
+            # if isinstance(self._current_episode_id, str):
+            #     print("Detected string instead of int in pop")
+            #     self._current_episode_id = int(self._current_episode_id)
+            # test = [self._reward_state[r]._observation for r in self._reward_state.keys() if r is not None]
+            # print('[ARRAY] current id is: {} Test Array : {}, Valid IDs is {} , Array of Reward States are: {}'.format(type(self._current_episode_id), test, self._valid_ids(), self._reward_state))
             if peek:
                 # This happens when a higher layer wants to poll for
                 # new observations being ready, but doesn't want to
@@ -224,7 +233,10 @@ class RewardBuffer(object):
                 # keys from the new taking precedence.
                 self._advance()
 
+
                 new_state = self.reward_state(self._current_episode_id)
+
+                
                 try:
                     info['env_status.complete.episode_id'] = info['env_status.episode_id']
                 except KeyError:
@@ -239,6 +251,8 @@ class RewardBuffer(object):
                 if len(info['env.text']) > 0:
                     extra_logger.info('[%s] RewardBuffer dropping env.text for completed episode %s: %s', self.label, info['env_status.episode_id'], info['env.text'])
                 info['env.text'] = new_text
+
+            
             return reward, done, info
 
     def mask(self):
@@ -249,6 +263,8 @@ class RewardBuffer(object):
 
     def reset(self, episode_id):
         with self.cv:
+            # if isinstance(episode_id, str):
+            #     print("Detected string instead of int in reset method")
             extra_logger.info('[%s] RewardBuffer advancing: unmasking after explicit reset: episode_id=%s', self.label, episode_id)
             self._masked = False
             self._drop_below(episode_id, quiet=True)
@@ -264,7 +280,7 @@ class RewardBuffer(object):
         valid_ids = self._valid_ids()
         if len(valid_ids) > 0:
             parsed = max(env_status.parse_episode_id(k) for k in valid_ids)
-            return env_status.generate_episode_id(parsed)
+            return parsed
         else:
             return None
 
@@ -280,7 +296,7 @@ class RewardBuffer(object):
 
         max_id = self._max_id()
 
-        print("[ADVANCING STATE] completed episode ID: %d, max id : %d, current id: %d", completed_episode_id, max_id, self._current_episode_id)
+        #print("[ADVANCING STATE] completed episode ID: {}, max id : {}, current id: {}, valid IDs: {}".format(completed_episode_id, max_id, self._current_episode_id, self._valid_ids()))
         if max_id is not None:
             self._current_episode_id = max_id
             if env_status.compare_ids(completed_episode_id, self._current_episode_id) >= 0:

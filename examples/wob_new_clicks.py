@@ -23,8 +23,8 @@ if __name__ == "__main__":
         break
 
     for idx in range(5000):
-        time.sleep(0.1)
-        a = env.action_space.sample()
+        time.sleep(0.05)
+        #a = env.action_space.sample()
         obs, reward, is_done, info = env.step([a])
         if obs[0] is None:
             print("Env is resetting...")

@@ -8,7 +8,7 @@ if __name__ == "__main__":
     env = gym.make("VNC.Core-v0")
     env = jiminy.wrappers.experimental.SoftmaxClickMouse(env)
 
-    env.configure(env='sibeshkar/wob-v0', task='ClickButton', remotes='vnc://localhost:5901+15901')
+    env.configure(env='sibeshkar/wob-v1', task='ClickButton', remotes='vnc://localhost:5901+15901')
     obs = env.reset()
     
     #time.sleep(4) #TODO: This needs to be unnecessary
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     while True:
         a = env.action_space.sample()
         obs, reward, is_done, info = env.step([a])
-        if obs[0] is None:
+        if obs[0]['dom'] is None:
             print("Env is still resetting...")
             continue
         break
