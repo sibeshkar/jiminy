@@ -135,7 +135,7 @@ class VNCEnv(vectorized.Env):
         self._seed_value = seed
         return [seed]
 
-    def configure(self, remotes=None,
+    def configure(self, remotes=None, 
                   client_id=None,
                   start_timeout=None, docker_image=None,
                   ignore_clock_skew=False, disable_action_probes=False,

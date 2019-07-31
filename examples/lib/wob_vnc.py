@@ -2,7 +2,7 @@ import jiminy.gym as gym
 import numpy as np
 from PIL import Image, ImageDraw
 
-from jiminy.wrappers.experimental import SoftmaxClickMouse
+from jiminy.actions.experimental import SoftmaxClickMouse
 from jiminy import vectorized
 
 

@@ -1,11 +1,13 @@
 class Remote(object):
-    def __init__(self, handle, vnc_address, vnc_password, rewarder_address, rewarder_password, name=None):
+    def __init__(self, handle, vnc_address, vnc_password, rewarder_address, rewarder_password, env, task=None,name=None):
         self.name = name
         self.handle = handle
         self.vnc_address = vnc_address
         self.vnc_password = vnc_password
         self.rewarder_address = rewarder_address
         self.rewarder_password = rewarder_password
+        self.env = env
+        self.task = task
 
     def __str__(self):
         return 'Remote<{}:{}>'.format(self.handle, self.name)

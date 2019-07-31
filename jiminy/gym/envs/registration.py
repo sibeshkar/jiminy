@@ -1,5 +1,6 @@
 import logging
 import pkg_resources
+import importlib
 import re
 from jiminy.gym import error
 import warnings
@@ -13,9 +14,10 @@ logger = logging.getLogger(__name__)
 env_id_re = re.compile(r'^(?:[\w:-]+\/)?([\w:.-]+)-v(\d+)$')
 
 def load(name):
-    entry_point = pkg_resources.EntryPoint.parse('x={}'.format(name))
-    result = entry_point.load(False)
-    return result
+    mod_name, attr_name = name.split(":")
+    mod = importlib.import_module(mod_name)
+    fn = getattr(mod, attr_name)
+    return fn
 
 class EnvSpec(object):
     """A specification for a particular instance of the environment. Used
