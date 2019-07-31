@@ -4,7 +4,7 @@ import time
 
 if __name__ == "__main__":
     env = gym.make("VNC.Core-v0")
-    env = jiminy.wrappers.experimental.SoftmaxClickMouse(env)
+    env = jiminy.actions.experimental.SoftmaxClickMouse(env)
 
     env.configure(env='sibeshkar/wob-v1', task='ClickButton', remotes='vnc://0.0.0.0:5901+15901')
     obs = env.reset()

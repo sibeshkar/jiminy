@@ -14,6 +14,11 @@ class Env(Env):
 
     # Number of remotes. User should set this.
     n = None
+    def reset_runner(self, index):
+        return self._reset_runner(index)
+
+    def _reset_runner(self, index):
+        raise NotImplementedError
 
 
 class Wrapper(Env, Wrapper):
@@ -43,8 +48,25 @@ class Wrapper(Env, Wrapper):
     def configure(self, **kwargs):
         self.env.configure(**kwargs)
 
+    def step_runner(self, index, action):
+        return self._step_runner(index, action)
+
+    def _step_runner(self, index, action):
+        raise NotImplementedError
+
 class ObservationWrapper(Wrapper, ObservationWrapper):
-    pass
+    def _observation(self, observation):
+        assert (isinstance(observation, list) and len(observation) == self.n), "Expected observation to be list of size {}".format(self.n, observation)
+        obs_list = []
+        for i, obs in enumerate(observation):
+            obs_list.append(self.observation_runner(i, obs))
+        return obs_list
+
+    def observation_runner(self, index, observation):
+        return self._observation_runner(index, observation)
+
+    def _observation_runner(self, index, observation):
+        raise NotImplementedError
 
 class RewardWrapper(Wrapper, RewardWrapper):
     pass

@@ -6,7 +6,7 @@ from jiminy import error
 from jiminy.gym import spaces as gym_spaces
 from jiminy import spaces
 from jiminy import rewarder, vectorized
-from jiminy.envs.vnc_core_env import translator
+from jiminy.translator import atari as translator
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +51,8 @@ Crop the relevant portion of the monitor where an Atari enviroment resides.
         super(CropAtari, self).__init__(env)
         self.observation_space = gym_spaces.Box(0, 255, shape=(ATARI_HEIGHT, ATARI_WIDTH, 3))
 
-    def _observation(self, observation_n):
-        return [{'vision': ob['vision'][:ATARI_HEIGHT, :ATARI_WIDTH, :]} for ob in observation_n]
+    def _observation_runner(self, index, observation):
+        return {'vision': observation['vision'][:ATARI_HEIGHT, :ATARI_WIDTH, :]}
 
 def one_hot(indices, depth):
     return np.eye(depth)[indices]

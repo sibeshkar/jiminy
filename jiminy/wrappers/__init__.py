@@ -16,6 +16,7 @@ from jiminy.wrappers.time_limit import TimeLimit
 from jiminy.wrappers.timer import Timer
 from jiminy.wrappers.vectorize import Vectorize, Unvectorize, WeakUnvectorize
 from jiminy.wrappers.vision import Vision
+from jiminy.wrappers.action_space import SoftmaxClickMouse
 
 
 def wrap(env):

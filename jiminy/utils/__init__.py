@@ -10,6 +10,7 @@ import signal
 from twisted.internet import defer
 
 from jiminy.twisty import reactor
+from jiminy.utils.basic import *
 
 logger = logging.getLogger(__name__)
 
