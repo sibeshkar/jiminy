@@ -4,12 +4,12 @@ import time
 
 from lib import wob_vnc
 
-REMOTES_COUNT = 4
+REMOTES_COUNT = 8
 
 if __name__ == "__main__":
     env = gym.make("VNC.Core-v0")
     env = jiminy.wrappers.experimental.SoftmaxClickMouse(env)
-    remotes_url= wob_vnc.remotes_url(port_ofs=0, hostname='localhost', count=REMOTES_COUNT)
+    remotes_url= wob_vnc.remotes_url(port_ofs=0, hostname='0.0.0.0', count=REMOTES_COUNT)
     env.configure(env='sibeshkar/wob-v0', task='ClickButton', remotes=remotes_url)
     observation_n = env.reset()
 
@@ -20,8 +20,8 @@ if __name__ == "__main__":
             print("Env is still resetting...")
             continue
         break
-
-    for idx in range(5000):
+    idx = 0
+    while True:
         time.sleep(0.05)
         #a = env.action_space.sample()
         action_n = [env.action_space.sample() for ob in observation_n]
@@ -35,6 +35,7 @@ if __name__ == "__main__":
         print("Reward", reward_n)
         print("Is done", done_n)
         print("Info", info)
+        idx+=1
         env.render()
 
 
