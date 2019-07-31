@@ -1,26 +1,34 @@
 version: '3.3'
-##Start with docker-compose -f docker-compose-play.yml --compatibility up -d
+##Start with docker-compose -f docker-compose-remotes.yml --compatibility up -d
 services:
    vnc-remote:
-     image: sibeshkar/jiminywob:latest
-     privileged: true
-     cap_add: ["SYS_ADMIN"]
-     ipc: host
-     command: ["run_firefox", "-f", "20"]
+     image: sibeshkar/jiminy-env:detached
      deploy:
-      replicas: 8
-      resources:
-        limits:
-          memory: 500M
+      replicas: 4
      ports:
-       - "5900-5907:5900"
-       - "15900-15907:15900"
-       - "4800-4807:6080"
-   dashboard:
-     image: sibeshkar/jiminydash:latest
-     depends_on: 
-       - vnc-remote
-     network_mode: "host"
+       - "5900-5903:5901"
+       - "15900-15903:15900"
+# services:
+#    vnc-remote:
+#      image: sibeshkar/jiminywob:latest
+#      privileged: true
+#      cap_add: ["SYS_ADMIN"]
+#      ipc: host
+#      command: ["run_firefox", "-f", "20"]
+#      deploy:
+#       replicas: 8
+#       resources:
+#         limits:
+#           memory: 500M
+#      ports:
+#        - "5900-5907:5900"
+#        - "15900-15907:15900"
+#        - "4800-4807:6080"
+#    dashboard:
+#      image: sibeshkar/jiminydash:latest
+#      depends_on: 
+#        - vnc-remote
+#      network_mode: "host"
 
       
 #docker run -d -p 5900:5900 -p 15900:15900 -p 80:6080 -m 500m --privileged --ipc host --cap-add SYS_ADMIN sibeshkar/jiminywob:latest run_firefox -f 20

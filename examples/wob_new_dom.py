@@ -1,31 +1,32 @@
 import jiminy
 import jiminy.gym as gym
 import time
-from lib import wob_vnc
-from PIL import Image
 
 if __name__ == "__main__":
     env = gym.make("VNC.Core-v0")
     env = jiminy.actions.experimental.SoftmaxClickMouse(env)
 
-    env.configure(env='prannayk/wob-v1', task='ClickButton', remotes='vnc://localhost:5901+15901')
+    env.configure(env='sibeshkar/wob-v1', task='ClickButton', remotes='vnc://0.0.0.0:5901+15901')
     obs = env.reset()
 
     while True:
         a = env.action_space.sample()
         obs, reward, is_done, info = env.step([a])
-        if obs[0]['dom'] is None:
+        if obs[0]['dom'] is None: #substitute with obs[0]['vision'] for image equivalent
             print("Env is still resetting...")
             continue
         break
 
     for idx in range(5000):
         time.sleep(0.05)
-        #a = env.action_space.sample()
+        a = env.action_space.sample()
         obs, reward, is_done, info = env.step([a])
         if obs[0] is None:
             print("Env is resetting...")
             continue
+        
+        # if is_done[0]:
+        #     print("Reward: {}, Done: {}, Info {}".format(reward, is_done, info['n'][0]['env_status.episode_id']))
         print("Sampled action: ", a)
         print("Response are of index:", idx)
         print("Observation", obs[0]['dom'])
