@@ -24,8 +24,10 @@ class RewardState(object):
 
     def push_time(self, remote_time, local_time):
         # Sometimes helpful diagnostic info
+        local_time_ms = int(round(local_time * 1000))
         self.info['reward_buffer.remote_time'] = remote_time
-        self.info['reward_buffer.local_time'] = local_time
+        self.info['reward_buffer.local_time'] = local_time_ms
+        self.info['reward_buffer.latency'] = local_time_ms - remote_time
 
     def set_env_info(self, env_state):
         self._env_state = env_state
