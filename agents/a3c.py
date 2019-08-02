@@ -37,10 +37,11 @@ class A3C(object):
     def learn(self, domnet):
         assert (not domnet is None), "Expected domnet object to not be None, got: {}".format(domnet)
         logging.debug("Started A3C learner")
+
         self.opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate, beta_1=self.momentum)
         self.domnet = domnet
-        self.betadom = domnet.betadom
-        self.n_workers = self.betadom.n
+        self.env = domnet.env
+        self.n_workers = self.env.n
         self.T = 0
         self.kill_flags = [False for _ in range(self.n_workers)]
         self.thread_list = []
@@ -69,8 +70,8 @@ class A3C(object):
                 continue
             t.join()
         self.update_thread.join()
-        domnet.save(self.logdir)
-        self.betadom.close()
+        self.domnet.save(self.logdir)
+        self.env.close()
         logging.debug("Closing A3C master")
 
     def runner(self, index, episode_max_length=100, max_step_count=1e6):
@@ -85,7 +86,7 @@ class A3C(object):
                 # exit if the process has run for maximum number of episodes
                 if self.T >= max_step_count: return
                 t_s = t
-            obs = self.betadom.env.reset_runner(index)
+            obs = self.env.reset_runner(index)
             done,value = False, None
 
             # synchoronize model from master
@@ -99,9 +100,9 @@ class A3C(object):
                         continue
                     value_log[t], action_log_prob_log[t] = value, action_log_prob
                     action.buttonmask = 1
-                    self.betadom.step_runner(index, action)
+                    self.env.step_runner(index, action)
                     action.buttonmask = 0
-                    obs, reward_log[t], done, info = self.betadom.step_runner(index, action)
+                    obs, reward_log[t], done, info = self.env.step_runner(index, action)
                     with self.queue_lock:
                         self.T += 1
                     t+=1
