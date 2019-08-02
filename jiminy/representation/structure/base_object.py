@@ -1,6 +1,23 @@
+from jiminy.gym import ObservationWrapper
 from jiminy.representation.structure import utils
+from jiminy.global_protos import DomObjectInstance
 import json
 import datetime
+from google.protobuf import json_format
+
+class JiminyBaseInstancePb2(ObservationWrapper):
+    def __init__(self, json_string=None):
+        self.pb2 = DomObjectInstance()
+        if not json_string is None:
+            self._observation(json_string)
+
+    def _observation(self, json_string):
+        if isinstance(json_string, dict):
+            json_string = json_string["dom"]
+        if json_string is None:
+            return None
+        json_format.Parse(json_string, self.pb2)
+        return self.pb2
 
 class JiminyBaseObject(object):
     def __init__(self, betaDOM, seleniumObject=None, seleniumDriver=None,
@@ -20,8 +37,6 @@ class JiminyBaseObject(object):
                 raise ValueError("Bounding box can not be None")
             if objectType == None:
                 raise ValueError("Object Type can not be none")
-            if actionList == None:
-                raise ValueError("ActionList can not be null")
             self.boundingBox = boundingBox
             self.objectType = objectType
         self.objectPixels = utils.getPixelsForBoundingBox(betaDOM, self.boundingBox)

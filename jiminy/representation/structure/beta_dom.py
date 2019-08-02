@@ -1,13 +1,16 @@
+import jiminy
+import sys
 from jiminy.vectorized.core import Env
 # import time
 # from jiminy.wrappers.experimental import RepresentationWrapper
 from jiminy import vectorized
-from jiminy.representation.structure import utils, JiminyBaseObject
+from jiminy.representation.structure import utils, JiminyBaseObject, JiminyBaseInstancePb2
 from jiminy.utils.webloader import WebLoader
-from jiminy.envs import SeleniumWoBEnv
+from jiminy import gym
 from jiminy.representation.inference.betadom import BaseModel
 from jiminy.utils.ml import Vocabulary
-import os
+# import os
+import time
 import numpy as np
 import queue
 import threading
@@ -74,12 +77,10 @@ class betaDOM(vectorized.ObservationWrapper):
     def __init__(self, env=None):
         assert (not env is None), "Env passed to ClickableSpace can not be {}".format(env)
         assert isinstance(env, Env), "Env passed to ClickableSpace can not be {}, expected: jiminy.vectorized.Env".format(env)
-        self.env = env
-        self.betadom_instance_list = [betaDOMInstance(self.env.screen_shape) for _ in range(self.n)]
+        super(betaDOM, self).__init__(env)
 
     def _observation_runner(self, i, obs):
-        self.betadom_instance_list[i].observation(obs)
-        return self.betadom_instance_list[i]
+        return self.betadom_instance_list[i].observation(obs)
 
     def _reset_runner(self, index):
         return self.env.reset_runner(index)
@@ -99,14 +100,51 @@ class betaDOM(vectorized.ObservationWrapper):
     def _step_runner(self, index, action):
         return self.env.step_runner(index, action)
 
+    def configure(self, *args, **kwargs):
+        if "screen_shape" in kwargs:
+            self.screen_shape = kwargs["screen_shape"]
+            del kwargs["screen_shape"]
+        self.env.configure(*args, **kwargs)
+        self.betadom_instance_list = [JiminyBaseInstancePb2() for _ in
+                range(self.n)]
+
+# testModeName = "selenium"
+testModeName = "VNC.Core-v0"
+
 if __name__ == "__main__":
-    wobenv = SeleniumWoBEnv(screen_shape=(300,300))
-    jiminy_home = os.getenv("JIMINY_ROOT")
-    wobenv.configure(_n=1, remotes=["file:///{}/miniwob-plusplus/html/miniwob/click-checkboxes.html".format(jiminy_home)])
-    betadom = betaDOM(wobenv)
-    obs = betadom.reset()
-    betadom.observation(obs)
+    env = gym.make(testModeName)
+    env = jiminy.actions.experimental.SoftmaxClickMouse(env)
+    env = betaDOM(env)
+    env.configure(screen_shape=(300,300), env='sibeshkar/wob-v1', task='ClickButton', remotes='vnc://0.0.0.0:5901+15901')
+    obs = env.reset()
+    first_set = False
+    while True:
+        a = env.action_space.sample()
+        obs, reward, is_done, info = env.step([a])
+        if obs[0] is None:
+            if not first_set:
+                print("Env is still resetting...", end="")
+                first_set = True
+            else:
+                print(".", end="")
+            sys.stdout.flush()
+            continue
+        print()
+        break
 
-    betadom.observation([np.zeros([300, 300, 3])])
-
-    wobenv.close()
+    for _ in range(5000):
+        time.sleep(0.05)
+        a = env.action_space.sample()
+        obs, reward, is_done, info = env.step([a])
+        # obs = env.observation(obs)
+        if obs[0] is None:
+            print("Env is resetting...")
+            continue
+        print("Sampled action: ", a)
+        if not obs is None:
+            print("Observation", str(obs))
+        print("Reward", reward)
+        print("Is done", is_done)
+        print("Info", info)
+        env.render()
+    env.close()
