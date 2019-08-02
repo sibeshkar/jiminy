@@ -98,9 +98,9 @@ class BetaDOMNet(object):
         policy = state
         for i,width in enumerate(self.policy_function_layers):
             policy = tf.keras.layers.Dense(width, activation=self.policy_activations[i])(policy)
-        policy_x = tf.keras.layers.Dense(env.screen_shape[0], activation='softmax', name='x-coordinate-action')(policy)
-        policy_y = tf.keras.layers.Dense(env.screen_shape[1], activation='softmax', name='y-coordinate-action')(policy)
-        policy_b = tf.keras.layers.Dense(len(env.buttonmasks), activation='softmax', name='button-mask-action')(policy)
+        policy_x = tf.keras.layers.Dense(self.env.screen_shape[0], activation='softmax', name='x-coordinate-action')(policy)
+        policy_y = tf.keras.layers.Dense(self.env.screen_shape[1], activation='softmax', name='y-coordinate-action')(policy)
+        policy_b = tf.keras.layers.Dense(2, activation='softmax', name='button-mask-action')(policy)
 
         self.model = tf.keras.Model(inputs=[self.dom_word_input, self.dom_shape_input, self.dom_embedding_input, self.instruction_word_input],
                 outputs=[value, [policy_x, policy_y, policy_b]])
@@ -202,6 +202,7 @@ class BetaDOMNet(object):
 
     def configure(self, *args, **kwargs):
         self.env.configure(*args, **kwargs)
+        self.create_model()
 
     def reset(self):
         return self.env.reset()
@@ -210,7 +211,7 @@ class BetaDOMNet(object):
         obs = self.env.reset()
         waitTime = 200
         first_set = False
-        for idx in range(90000 // waitTime):
+        for idx in range(900000 // waitTime):
             a = self.env.action_space.sample()
             obs, reward, is_done, info = self.env.step([a])
             if obs[0] is None:

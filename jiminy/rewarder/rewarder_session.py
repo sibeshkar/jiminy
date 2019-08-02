@@ -213,7 +213,7 @@ class RewarderSession(object):
                 # tl;dr hardcoding 0.0 here avoids a double reset.
                 #TODO: Add env.launch here
                 logger.info("Reset is happening")
-                
+
                 reply = yield self._send_env_reset(client, seed=seed, episode_id=0, env_id=env_id+'/'+task)
             else:
                 # No env_id requested, so we just proceed without a reset
@@ -275,7 +275,7 @@ class RewarderSession(object):
             seed=seed,
             fps=client.factory.arg_fps,
             episode_id=episode_id)
-    
+
     def _send_env_launch(self, client, episode_id=None, env_id=None):
         logger.info('[%s] Sending launch for env_id=%s fps=%s', client.factory.label, client.factory.arg_env_id, client.factory.arg_fps)
         return client.send_launch(

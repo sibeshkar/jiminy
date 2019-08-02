@@ -142,3 +142,9 @@ class Throttle(vectorized.Wrapper):
     def _start_timer(self):
         self._start = time.time()
         self._steps = 0
+
+    def _reset_runner(self, index):
+        self.env.reset_runner(index)
+
+    def _step_runner(self, index, action_n):
+        self.env.step_runner(index, action_n)

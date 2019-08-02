@@ -136,3 +136,9 @@ class SoftmaxClickMouse(vectorized.ActionWrapper):
         px, py = point
         x, width, y, height = coords
         return x <= px <= x + width and y <= py <= y + height
+
+    def _reset_runner(self, index):
+        return self.env.reset_runner(index)
+
+    def _step_runner(self, index, action_n):
+        return self.env.step_runner(index, action_n)

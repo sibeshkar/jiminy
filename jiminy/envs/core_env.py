@@ -238,11 +238,11 @@ class CoreVNCEnv(vectorized.Env):
         self._handle_connect()
         return None
 
-    def _step_runner(self, action_n, index):
-        self._handle_connect()
+    def _step_runner(self, index, action_n):
         assert self.connection_names[index] is not None, "Can not find connection for index i"
-        action_n, peed_n = self._compile_actions([action_n])
-        if self.rewarder_session:
+        actions = [None for _ in range(self.n)]
+        actions[index] = action_n
+        observation_n, reward_n, done_n, info_n = self.step(action_n)
 
     def _step(self, action_n):
         self._handle_connect()
@@ -331,6 +331,8 @@ class CoreVNCEnv(vectorized.Env):
     def _action_d(self, action_n):
         action_d = {}
         for i, action in enumerate(action_n):
+            if action is None:
+                continue
             action_d[self.connection_names[i]] = action
         return action_d
 
@@ -392,6 +394,8 @@ class CoreVNCEnv(vectorized.Env):
             for i, action in enumerate(action_n):
                 compiled = []
                 compiled_n.append(compiled)
+                if action is None:
+                    continue
                 for event in action:
                     # Handle any special control actions
                     if event == spaces.PeekReward:
