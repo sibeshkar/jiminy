@@ -1,6 +1,9 @@
 import jiminy
 import jiminy.gym as gym
 import time
+from jiminy.global_protos import DomObjectInstance
+import json
+from google.protobuf import json_format
 
 if __name__ == "__main__":
     env = gym.make("VNC.Core-v0")
@@ -18,18 +21,22 @@ if __name__ == "__main__":
         break
 
     for idx in range(5000):
+        domobj = DomObjectInstance()
+        decoder = json.JSONDecoder()
         time.sleep(0.05)
         a = env.action_space.sample()
         obs, reward, is_done, info = env.step([a])
         if obs[0] is None:
             print("Env is resetting...")
             continue
-        
+
         # if is_done[0]:
         #     print("Reward: {}, Done: {}, Info {}".format(reward, is_done, info['n'][0]['env_status.episode_id']))
         print("Sampled action: ", a)
         print("Response are of index:", idx)
-        print("Observation", obs[0]['dom'])
+        if type(obs[0]['dom']) is str:
+            print(obs[0]['dom'])
+            print("Observation", json_format.Parse(obs[0]['dom'], domobj))
         print("Reward", reward)
         print("Is done", is_done)
         print("Info", info)

@@ -1,4 +1,5 @@
 from jiminy.representation.structure import betaDOM
+from jiminy import gym
 from jiminy.spaces import vnc_event
 from jiminy.envs import SeleniumWoBEnv
 from jiminy.utils.ml import Vocabulary
@@ -192,7 +193,7 @@ class BetaDOMNet(object):
         return tf.keras.models.clone_model(self.model)
 
 if __name__ == "__main__":
-    wobenv = SeleniumWoBEnv()
+    env = gym.make("VNC.Core-v0")
     wobenv.configure(_n=1, remotes=["file:///{}/miniwob-plusplus/html/miniwob/click-button.html".format(os.getenv("JIMINY_ROOT"))])
     betadom = betaDOM(wobenv)
     obs = betadom.reset()
