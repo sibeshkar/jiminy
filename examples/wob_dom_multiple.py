@@ -10,7 +10,7 @@ if __name__ == "__main__":
     env = gym.make("VNC.Core-v0")
     env = jiminy.wrappers.experimental.SoftmaxClickMouse(env)
     remotes_url= wob_vnc.remotes_url(port_ofs=0, hostname='0.0.0.0', count=REMOTES_COUNT)
-    env.configure(env='sibeshkar/wob-v0', task='ClickButton', remotes=remotes_url)
+    env.configure(env='sibeshkar/wob-v1', task='ClickButton', remotes=remotes_url)
     observation_n = env.reset()
 
     while True:
