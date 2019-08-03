@@ -20,7 +20,7 @@ class A3C(object):
             entropy_beta=1e-3,
             clip_grad=40.,
             logdir='./logs/a2c',
-            batch_size=32):
+            batch_size=16):
         create_directory(logdir)
         self.logdir = logdir
         self.gamma = gamma
@@ -46,7 +46,7 @@ class A3C(object):
         assert (not domnet is None), "Expected domnet object to not be None, got: {}".format(domnet)
         logging.debug("Started A3C learner")
 
-        writer = tf.contrib.summary.create_file_writer(self.logdir)
+        writer = tf.contrib.summary.create_file_writer(self.logdir + "/" + str(time.time()))
         writer.set_as_default()
 
         self.opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate, beta_1=self.momentum)
@@ -123,13 +123,12 @@ class A3C(object):
         while True:
             grads_policy, grads_value = None, None
             with tf.GradientTape() as tape:
-                for _ in range(self.batch_size):
+                for batch in range(self.batch_size):
                     episode += 1
                     # noise before running a new episode
                     reward_log = dict()
                     value_log = dict()
                     action_log_prob_log = dict()
-                    grads_value, grads_policy = None, None
                     with self.queue_lock:
                         self.global_step.assign_add(1)
                         # exit if the process has run for maximum number of episodes
@@ -187,9 +186,9 @@ class A3C(object):
                         else: grads_policy += loss_policy
                         if grads_value is None: grads_value = loss_value
                         else: grads_value += loss_value
-                    loss = grads_policy + grads_value
-                    print("Epsiode loss: {}, reward: {}".format(loss.numpy(), reward_log[t-1]))
-                    with tf.contrib.summary.record_summaries_every_n_global_steps(1):
+                    loss = (grads_policy + grads_value) / (batch+1)
+                    print(loss.numpy())
+                    with tf.contrib.summary.always_record_summaries():
                         tf.contrib.summary.scalar('global_step', self.global_step)
                         tf.contrib.summary.scalar('value_error', loss_value)
                         tf.contrib.summary.scalar('final_reward', tf.constant(reward_log[t-1]))
