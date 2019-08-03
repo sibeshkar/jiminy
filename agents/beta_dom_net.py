@@ -12,6 +12,7 @@ from a3c import A3C
 import time
 import sys
 import logging
+import os
 
 # from file_initializer import FileInitializer
 
@@ -124,7 +125,11 @@ class BetaDOMNet(object):
                 word_vectors=None, name=config["name"], betadom=betadom)
 
     def save(self, path):
-        tf.keras.models.save_weights(self.model, path)
+        self.model.save_weights(path)
+
+    def load(self, path):
+        if os.path.exists(path):
+            self.model.load_weights(path)
 
     def step_runner(self, index, obs, model=None):
         if model is None:

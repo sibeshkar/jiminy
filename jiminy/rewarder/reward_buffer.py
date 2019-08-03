@@ -64,7 +64,7 @@ class RewardState(object):
         text = self.text
         self.text = []
         return text
-    
+
     def pop_obs(self):
         observation = self._observation
         #self._observation = 0
@@ -79,25 +79,25 @@ class RewardState(object):
             # rewarder_observation set.
             #print("[URGENT]Have set observation at", self._observation)
         info['rewarder.observation'] = self.pop_obs()
-        
+
         info['env_status.episode_id'] = self._episode_id
         info['env_status.env_state'] = self._env_state
 
         #print("[URGENT] Popping observation at", info)
-        
+
         #self._observations = []
         return info
 
     def pop(self):
         info = self.pop_info()
-        
+
 
         count = self.count
         reward = self.reward
         done = self.done
 
         #print('[%s] [URGENT] Popping reward %f and done %f and count %f from episode_id %s at time %f' % (self.label, self.reward, self.done, self.count,self._episode_id, time.time()))
-        
+
         self.count = 0
         self.reward = 0.
         self.done = False
@@ -105,13 +105,13 @@ class RewardState(object):
         info['stats.reward.count'] = count
         #extra_logger.debug('[%s] RewardState: popping reward %s from episode_id %s', self.label, reward, self._episode_id)
         #print('[%s] RewardState: popping reward %s and done %s from episode_id %s at time %f' % (self.label, reward, done, self._episode_id, time.time()))
-        
+
         return reward, done, info
 
     def set_observation(self, observation):
         self._observation = observation
         #print("[URGENT] Have set observation at", self._observation)
-        
+
 
 # Buffers up incoming rewards
 class RewardBuffer(object):
@@ -133,12 +133,12 @@ class RewardBuffer(object):
         try:
             return self._reward_state[episode_id]
         except:
-            extra_logger.info('[%s] RewardBuffer: Creating new RewardState for episode_id=%s', self.label, episode_id)
+            extra_logger.debug('[%s] RewardBuffer: Creating new RewardState for episode_id=%s', self.label, episode_id)
             # if isinstance(episode_id, str):
             #     print("Detected string instead of int in reward state method")
             reward_state = self._reward_state[episode_id] = RewardState(self.label, episode_id)
             if self._current_episode_id is None and not self._masked:
-                extra_logger.info('[%s] RewardBuffer advancing: No active episode, so activating episode_id=%s', self.label, episode_id)
+                extra_logger.debug('[%s] RewardBuffer advancing: No active episode, so activating episode_id=%s', self.label, episode_id)
                 self._current_episode_id = episode_id
                 self._drop_below(episode_id)
             if episode_id is not None and not self._masked:
@@ -150,7 +150,7 @@ class RewardBuffer(object):
                     state = self._reward_state[id]
                     if state.done:
                         continue
-                    extra_logger.info('[%s] RewardBuffer received message for episode_id=%s but no done=True message for %s. Artificially marking %s as done=True.', self.label, episode_id, id, id)
+                    extra_logger.debug('[%s] RewardBuffer received message for episode_id=%s but no done=True message for %s. Artificially marking %s as done=True.', self.label, episode_id, id, id)
                     state.push_done(True, {'env_status.artificial.done': True})
 
             return reward_state
@@ -158,9 +158,9 @@ class RewardBuffer(object):
     def set_env_info(self, env_state, env_id, episode_id, fps):
         with self.cv:
             if self._remote_env_state is not None:
-                extra_logger.info('[%s] RewardBuffer changing env_state: %s (env_id=%s) -> %s (env_id=%s) (episode_id: %s->%s, fps=%s, masked=%s, current_episode_id=%s)', self.label, self._remote_env_state, self._remote_env_id, env_state, env_id, self._remote_episode_id, episode_id, fps, self._masked, self._current_episode_id)
+                extra_logger.debug('[%s] RewardBuffer changing env_state: %s (env_id=%s) -> %s (env_id=%s) (episode_id: %s->%s, fps=%s, masked=%s, current_episode_id=%s)', self.label, self._remote_env_state, self._remote_env_id, env_state, env_id, self._remote_episode_id, episode_id, fps, self._masked, self._current_episode_id)
             else:
-                extra_logger.info('[%s] RewardBuffer: Initial env_state: %s (env_id=%s) (episode_id: %s, fps=%s, masked=%s, current_episode_id=%s)', self.label, env_state, env_id, episode_id, fps, self._masked, self._current_episode_id)
+                extra_logger.debug('[%s] RewardBuffer: Initial env_state: %s (env_id=%s) (episode_id: %s, fps=%s, masked=%s, current_episode_id=%s)', self.label, env_state, env_id, episode_id, fps, self._masked, self._current_episode_id)
 
             assert isinstance(episode_id, int), "episode ID variables should be int"
 
@@ -238,7 +238,7 @@ class RewardBuffer(object):
 
                 new_state = self.reward_state(self._current_episode_id)
 
-                
+
                 try:
                     info['env_status.complete.episode_id'] = info['env_status.episode_id']
                 except KeyError:
@@ -251,15 +251,15 @@ class RewardBuffer(object):
                 info['env_status.env_state'] = new_state._env_state
                 new_text = self.reward_state(self._current_episode_id).pop_text()
                 if len(info['env.text']) > 0:
-                    extra_logger.info('[%s] RewardBuffer dropping env.text for completed episode %s: %s', self.label, info['env_status.episode_id'], info['env.text'])
+                    extra_logger.debug('[%s] RewardBuffer dropping env.text for completed episode %s: %s', self.label, info['env_status.episode_id'], info['env.text'])
                 info['env.text'] = new_text
 
-            
+
             return reward, done, info
 
     def mask(self):
         with self.cv:
-            extra_logger.info('[%s] RewardBuffer advancing: masking until reset completes; setting current_episode_id=None', self.label)
+            extra_logger.debug('[%s] RewardBuffer advancing: masking until reset completes; setting current_episode_id=None', self.label)
             self._masked = True
             self._current_episode_id = None
 
@@ -267,7 +267,7 @@ class RewardBuffer(object):
         with self.cv:
             # if isinstance(episode_id, str):
             #     print("Detected string instead of int in reset method")
-            extra_logger.info('[%s] RewardBuffer advancing: unmasking after explicit reset: episode_id=%s', self.label, episode_id)
+            extra_logger.debug('[%s] RewardBuffer advancing: unmasking after explicit reset: episode_id=%s', self.label, episode_id)
             self._masked = False
             self._drop_below(episode_id, quiet=True)
             self._current_episode_id = episode_id
@@ -277,7 +277,7 @@ class RewardBuffer(object):
         # with self.cv:
         #     self.push_info(episode_id, {'env_status.launch.episode_id': episode_id})
         pass
-        
+
     def _max_id(self):
         valid_ids = self._valid_ids()
         if len(valid_ids) > 0:
@@ -302,13 +302,13 @@ class RewardBuffer(object):
         if max_id is not None:
             self._current_episode_id = max_id
             if env_status.compare_ids(completed_episode_id, self._current_episode_id) >= 0:
-                extra_logger.info("[%s] RewardBuffer advancing: setting episode_id=None until new data received. Rare condition reached where message for old environment received after new one: completed_episode_id=%r self._current_episode_id=%r (%r). This is ok, but something we may want to fix in the future", self.label, completed_episode_id, self._current_episode_id, self._reward_state)
+                extra_logger.debug("[%s] RewardBuffer advancing: setting episode_id=None until new data received. Rare condition reached where message for old environment received after new one: completed_episode_id=%r self._current_episode_id=%r (%r). This is ok, but something we may want to fix in the future", self.label, completed_episode_id, self._current_episode_id, self._reward_state)
                 self._current_episode_id = None
             else:
-                extra_logger.info('[%s] RewardBuffer advancing: has data for next episode: %s->%s', self.label, completed_episode_id, self._current_episode_id)
+                extra_logger.debug('[%s] RewardBuffer advancing: has data for next episode: %s->%s', self.label, completed_episode_id, self._current_episode_id)
                 self._drop_below(self._current_episode_id)
         else:
-            extra_logger.info('[%s] RewardBuffer advancing: setting episode_id=None until new data received (was episode_id=%s)', self.label, completed_episode_id)
+            extra_logger.debug('[%s] RewardBuffer advancing: setting episode_id=None until new data received (was episode_id=%s)', self.label, completed_episode_id)
             self._current_episode_id = None
 
     def _drop_below(self, episode_id, quiet=False):
@@ -321,7 +321,7 @@ class RewardBuffer(object):
             if quiet:
                 log = extra_logger.debug
             else:
-                log = extra_logger.info
+                log = extra_logger.debug
             log('[%s] RewardBuffer: dropping stale episode data: dropped=%s episode_id=%s', self.label, dropped, episode_id)
         for stored_id in dropped:
             del self._reward_state[stored_id]
