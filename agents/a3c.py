@@ -4,7 +4,13 @@ import queue
 import threading
 import logging
 import tensorflow as tf
-import utils
+# import utils
+import sys
+# import logging
+
+logging.basicConfig(level=logging.DEBUG,
+        filename="app.log",
+        mode="w", format="%(name)s - %(levelname)s - %(message)s")
 
 class A3C(object):
     def __init__(self,
@@ -52,11 +58,35 @@ class A3C(object):
             self.thread_list.append(t)
         self.update_thread = threading.Thread(target=self.update_weights, args=())
         self.update_thread.start()
+        other_fn = {
+                self.save : 100,
+                self.discount_t(0.99) : 1000
+                }
+        for fn, step in enumerate(other_fn):
+            threading.Thread(target=self.loop_step, args=(fn, step)).start()
+
+    def save(self):
+        self.domnet.save(self.logdir + "/a3c.h5")
+
+    def loop_step(self, step, fn):
+        next_T = 0
+        while True:
+            if self.T > next_T:
+                next_T += step
+                fn()
+            time.sleep(10)
+
+    def discount_t(self, discount_factor=0.99):
+        def fn():
+            self.domnet.greedy_epsilon *= discount_factor
+
+        return fn
 
     def update_weights(self):
         try:
             while True:
                 grad_updates = self.grad_queue.get()
+                print("Applying gradients: ", grad_updates)
                 self.opt.apply_gradients(grad_updates)
         except:
             self.close()
@@ -76,7 +106,10 @@ class A3C(object):
 
     def runner(self, index, episode_max_length=100, max_step_count=1e6):
         t,t_s = 0,0
+        episode = 0
+        action_reset = self.env.env._index(5,10 + 75)
         while True:
+            episode += 1
             # noise before running a new episode
             reward_log = dict()
             value_log = dict()
@@ -87,42 +120,64 @@ class A3C(object):
                 if self.T >= max_step_count: return
                 t_s = t
             obs = self.env.reset_runner(index)
+            action = self.env.action_space.sample()
+            while obs is None:
+                time.sleep(0.05)
+                obs, _, _, _ = self.env.step_runner(index, action)
+            print("Starting episode: {}".format(episode))
+            self.env.step_runner(index, action_reset)
             done,value = False, None
 
             # synchoronize model from master
-            # model = self.domnet.get_runner_instance()
+            model = self.domnet.get_runner_instance()
+            flag = True
 
             with tf.GradientTape() as tape:
                 # run episode for max_length time steps
                 while (not done) and t - t_s < episode_max_length:
-                    state, value, action, action_log_prob = self.domnet.step_runner(index, obs)
+                    if obs is None:
+                        if t - t_s == 0:
+                            print("Timed-out", end="")
+                        else:
+                            print("Ending episode cuz of error", end="")
+                        break
+                    state, value, action, action_log_prob = self.domnet.step_runner(index, obs, model)
                     if value is None:
-                        continue
+                        obs, _, done, info = self.env.step_runner(index, action_reset)
+                        print(obs.objects)
+                        break
                     value_log[t], action_log_prob_log[t] = value, action_log_prob
-                    action.buttonmask = 1
-                    self.env.step_runner(index, action)
-                    action.buttonmask = 0
                     obs, reward_log[t], done, info = self.env.step_runner(index, action)
                     with self.queue_lock:
                         self.T += 1
+                    if not done:
+                        print(".", end="")
                     t+=1
+                    flag = False
+                    sys.stdout.flush()
+                print()
+                if flag:
+                    continue
 
                 # Accumulate gradients from this run
                 bootstrap_value = tf.constant(0.)
-                val = action_log_prob_log[t-1]*(tf.constant(reward_log[t-1]) - value_log[t-1])
+                # val = action_log_prob_log[t-1]*(tf.constant(reward_log[t-1]) - value_log[t-1])
                 if not done:
                     bootstrap_value = tf.stop_gradient(value_log[t-1])
                 for i in range(t-1, t_s-1, -1):
                     bootstrap_value = (self.gamma*bootstrap_value) + tf.constant(reward_log[i])
-                    loss_policy = action_log_prob_log[i]*(bootstrap_value - value_log[i])
+                    loss_policy = -1.*action_log_prob_log[i]*tf.stop_gradient(bootstrap_value - value_log[i])
                     loss_value = tf.square(tf.stop_gradient(bootstrap_value) - value_log[i])
                     if grads_policy is None: grads_policy = loss_policy
                     else: grads_policy += loss_policy
                     if grads_value is None: grads_value = loss_value
                     else: grads_value += loss_value
                 loss = grads_policy + grads_value
+                print("Epsiode loss: {}, reward: {}".format(loss.numpy(), reward_log[t-1]))
 
-            grad_update = tape.gradient(loss, self.domnet.model.trainable_weights)
+            # compute gradients wrt used weights
+            grad_update = tape.gradient(loss, model.trainable_weights)
+            # apply gradients to common weights
             grad_updates = zip(grad_update, self.domnet.model.trainable_weights)
 
             # push gradients to a queue which updates them

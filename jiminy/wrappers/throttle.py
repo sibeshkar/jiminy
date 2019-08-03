@@ -144,7 +144,7 @@ class Throttle(vectorized.Wrapper):
         self._steps = 0
 
     def _reset_runner(self, index):
-        self.env.reset_runner(index)
+        return self.env.reset_runner(index)
 
     def _step_runner(self, index, action_n):
-        self.env.step_runner(index, action_n)
+        return self.env.step_runner(index, action_n)
