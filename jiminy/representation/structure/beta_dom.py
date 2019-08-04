@@ -97,9 +97,6 @@ class betaDOM(vectorized.ObservationWrapper):
     def _close(self):
         self.env.close()
 
-    def _step_runner(self, index, action):
-        return self.env.step_runner(index, action)
-
     def configure(self, *args, **kwargs):
         if "screen_shape" in kwargs:
             self.screen_shape = kwargs["screen_shape"]

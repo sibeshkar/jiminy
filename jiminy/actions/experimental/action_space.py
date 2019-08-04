@@ -69,7 +69,7 @@ class SoftmaxClickMouse(vectorized.ActionWrapper):
     This wrapper divides the active region into cells and creates an action for
     each which clicks in the middle of the cell.
     """
-    def __init__(self, env, active_region=(10, 75 + 50, 10 + 160, 75 + 210), discrete_mouse_step=10, noclick_regions=[]):
+    def __init__(self, env, active_region=(0, 75, 160, 75 + 210), discrete_mouse_step=1, noclick_regions=[]):
         super(SoftmaxClickMouse, self).__init__(env)
         logger.info('Using SoftmaxClickMouse with action_region={}, noclick_regions={}'.format(active_region, noclick_regions))
         xlow, ylow, xhigh, yhigh = active_region
@@ -79,6 +79,7 @@ class SoftmaxClickMouse(vectorized.ActionWrapper):
         self.discrete_mouse_step = discrete_mouse_step
         self.noclick_regions = noclick_regions
         self._points = []
+        self._points_rev = dict()
         removed = 0
         for x in xs:
             for y in ys:
@@ -88,19 +89,37 @@ class SoftmaxClickMouse(vectorized.ActionWrapper):
                     removed += 1
                     continue
                 self._points.append((xc, yc))
+                self._points_rev[(xc, yc)] = len(self._points)-1
         logger.info('SoftmaxClickMouse noclick regions removed {} of {} actions'.format(removed, removed + len(self._points)))
         self.action_space = gym.spaces.Discrete(len(self._points))
 
     def _action(self, action_n):
         return [self._discrete_to_action(int(i)) for i in action_n]
 
-    def _discrete_to_action(self, i):
-        xc, yc = self._points[i]
+    def _action_runner(self, action_n):
+        return self._discrete_to_action(int(action_n))
+
+    def _reverse_action_wrapper(self, i):
+        return self._reverse_action([i])[0]
+
+    def _discrete_to_action(self, i, points=None):
+        if points is None:
+            points = self._points
+        xc, yc = points[i]
         return [
             spaces.PointerEvent(xc, yc, buttonmask=0), # release
             spaces.PointerEvent(xc, yc, buttonmask=1), # click
             spaces.PointerEvent(xc, yc, buttonmask=0), # release
         ]
+
+    def _coords(self, i, points=None):
+        if points is None:
+            points = self._points
+        xc, yc = points[i]
+        return xc, yc
+
+    def _index(self, xc, yc):
+        return self._points_rev[(xc, yc)]
 
     def _reverse_action(self, action):
         xlow, ylow, xhigh, yhigh = self.active_region
@@ -139,6 +158,3 @@ class SoftmaxClickMouse(vectorized.ActionWrapper):
 
     def _reset_runner(self, index):
         return self.env.reset_runner(index)
-
-    def _step_runner(self, index, action_n):
-        return self.env.step_runner(index, action_n)

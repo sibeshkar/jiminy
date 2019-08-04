@@ -239,10 +239,11 @@ class CoreVNCEnv(vectorized.Env):
         return None
 
     def _step_runner(self, index, action_n):
-        assert self.connection_names[index] is not None, "Can not find connection for index i"
+        assert self.connection_names[index] is not None, "Can not find connection for index i: {}".format(index)
         actions = [None for _ in range(self.n)]
         actions[index] = action_n
-        observation_n, reward_n, done_n, info_n = self.step(action_n)
+        observation_n, reward_n, done_n, info_n = self.step(actions)
+        return observation_n[index], reward_n[index], done_n[index], info_n
 
     def _step(self, action_n):
         self._handle_connect()

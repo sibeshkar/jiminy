@@ -12,12 +12,26 @@ class JiminyBaseInstancePb2(ObservationWrapper):
             self._observation(json_string)
 
     def _observation(self, json_string):
+        self.queryv = None
         if isinstance(json_string, dict):
             json_string = json_string["dom"]
         if json_string is None:
             return None
         json_format.Parse(json_string, self.pb2)
-        return self.pb2
+        return self
+
+    @property
+    def query(self):
+        if self.queryv is not None:
+            return self.queryv.content
+        for dom in self.pb2.objects:
+            if dom.type == "query":
+                self.queryv = dom
+                return dom.content
+
+    @property
+    def objects(self):
+        return self.pb2.objects
 
 class JiminyBaseObject(object):
     def __init__(self, betaDOM, seleniumObject=None, seleniumDriver=None,
