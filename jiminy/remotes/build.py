@@ -4,7 +4,9 @@ from jiminy.remotes.allocator_remote import AllocatorManager
 from jiminy.remotes.docker_remote import DockerManager
 from jiminy.remotes.hardcoded_addresses import HardcodedAddresses
 
-def build(client_id, remotes, runtime=None, start_timeout=None, **kwargs):
+
+def build(client_id, remotes, env, task=None, runtime=None, start_timeout=None, **kwargs):
+    #TODO: This only account for the HardcodedAddresses manager yet. Allocater Manager still left. 
     if isinstance(remotes, int):
         remotes = str(remotes)
     elif not isinstance(remotes, str):
@@ -20,7 +22,7 @@ def build(client_id, remotes, runtime=None, start_timeout=None, **kwargs):
         ), n
     elif remotes.startswith('vnc://'):
         return HardcodedAddresses.build(
-            remotes,
+            remotes, env, task,
             start_timeout=start_timeout)
     elif remotes.startswith('http://') or remotes.startswith('https://'):
         if runtime is None:

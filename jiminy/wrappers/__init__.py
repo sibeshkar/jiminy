@@ -16,6 +16,7 @@ from jiminy.wrappers.time_limit import TimeLimit
 from jiminy.wrappers.timer import Timer
 from jiminy.wrappers.vectorize import Vectorize, Unvectorize, WeakUnvectorize
 from jiminy.wrappers.vision import Vision
+from jiminy.wrappers.action_space import SoftmaxClickMouse
 
 
 def wrap(env):
@@ -23,6 +24,9 @@ def wrap(env):
 
 def WrappedVNCEnv():
     return wrap(envs.VNCEnv())
+
+def WrappedCoreVNCEnv():
+    return wrap(envs.CoreVNCEnv())
 
 def WrappedGymCoreEnv(gym_core_id, fps=None, rewarder_observation=False):
     # Don't need to store the ID on the instance; it'll be retrieved

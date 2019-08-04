@@ -76,7 +76,7 @@ Start the environment `wob.mini.ClickTest2-v0` in a container. This exposes a po
 
 1. Change directory to `utils`
 2. Set environment variable : `export ENV_NAME=wob.mini.ClickTest2-v0`
-3. Run `docker-compose -f docker-compose-demo.yaml --compatibility up -d`
+3. Run `docker-compose -f docker-com pose-demo.yaml --compatibility up -d`
 4. To record demonstrations, visit the noVNC client at `HOSTNAME:6080` and connect using password : `boxware`
 5. After recording demonstrations, disconnect noVNC using the panel or close the tab.
 

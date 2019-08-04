@@ -31,6 +31,9 @@ def load_lines_ff(fname):
     lines = [line.strip() for line in lines]
     return lines
 
-def get_action_probability_pair(x,y,bm,probs):
-    action_log_prob = tf.math.log(tf.squeeze(probs[0])[x]) + tf.math.log(tf.squeeze(probs[1])[y]) + tf.math.log(tf.squeeze(probs[2])[bm])
-    return vnc_event.PointerEvent(x+1, y+1, bm), action_log_prob
+def get_action_probability(x,y, probs):
+    action_log_prob = tf.math.log(tf.squeeze(probs[0])[x]) + tf.math.log(tf.squeeze(probs[1])[y])
+    return action_log_prob
+
+def process_bounding_box(boundingBox):
+    return [boundingBox.x1, boundingBox.y1, boundingBox.x2, boundingBox.y2]

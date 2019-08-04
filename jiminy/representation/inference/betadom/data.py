@@ -40,11 +40,16 @@ def load_from_file(fname, vocab):
         data = json.loads(data)
 
     img_path = os.getenv("JIMINY_DATAROOT") + data["screenshot_img_path"]
-    img = cv2.imread(img_path, cv2.IMREAD_COLOR)
-    img = np.flip(img, axis=-1)
+    img = cv2.imread(img_path)
+    imgray = cv2.imread(img_path, 0)
+    edges = cv2.Canny(img, 40, 200)
+    img_bin, thresh = cv2.threshold(imgray, 100, 255, 0)
+    if len(img_bin.shape) == 2:
+        img_bin = np.expand_dims(img_bin, axis=-1)
+    if len(edges.shape) == 2:
+        edges = np.expand_dims(edges, axis=-1)
+    img = np.concatenate([img, edges, img_bin], axis=-1)
     target_list = []
-    target_list.append(np.concatenate([np.array(vocab.to_sym(["START"])),
-        np.array([0, 0, 0, 0], dtype=np.int64)]))
     for obj in data['base_object_list']:
         tag = np.array(vocab.to_sym([obj['objectType']]))
         boundingBox = np.array(list(obj['boundingBox'].values()))
@@ -73,6 +78,7 @@ def generate_targets(img, target_list, max_target_length=10, depth=10, screen_sh
     # generated_target_dataset = tf.one_hot(generated_target_dataset, on_value=1.0, off_value=0., depth=depth)
 
     end_target_list = np.array(end_target_list)
+    print(end_target_list)
 
     target_dataset = tf.convert_to_tensor(end_target_list[:,0].astype(np.int64), dtype=tf.int64)
     target_dataset = tf.one_hot(target_dataset, depth=depth, on_value=1.0, off_value=0.)
@@ -166,10 +172,8 @@ def convert_file_to_standard_format(fname, vocab):
     return data_string
 
 if __name__ == "__main__":
-    vocab = Vocabulary(["START","text","input", "checkbox", "button", "click", "END"])
+    vocab = Vocabulary(["text","input", "checkbox", "button", "click"])
     dataset = create_dataset("logdir", 32, vocab, 10, (300, 300,3))
-    print(dataset)
-
-    flist = os.listdir(dataroot + "/logdir")
-    flist = [f for f in flist if f[-5:] == ".json"]
-    convert_to_standard_format(flist, "output.test", vocab)
+    for e in dataset.take(4):
+        print(e[1])
+        print([v.shape for v in e])
