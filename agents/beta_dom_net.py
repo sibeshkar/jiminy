@@ -1,6 +1,7 @@
 import jiminy
 from jiminy.representation.structure import betaDOM
 from jiminy import gym
+from jiminy import vectorized
 # from jiminy.spaces import vnc_event
 # from jiminy.envs import SeleniumWoBEnv
 from jiminy.utils.ml import Vocabulary
@@ -23,18 +24,17 @@ def convert_to_tf_dtype(dtype):
         return tf.int64
     return tf.float32
 
-class BetaDOMNet(object):
+class BetaDOMNet(vectorized.Wrapper):
     def __init__(self, env=None, dom_embedding_size=128, dom_max_length=15,
             word_embedding_size=128, word_dict=["null"],
             dom_object_type_list=["input", "click", "text"], word_max_length=15,
-            value_function_layers=[64,32,1], value_activations=['tanh', 'tanh', 'sigmoid'],
+            value_function_layers=[64,32,1], value_activations=['tanh', 'tanh', 'tanh'],
             policy_function_layers=[64,32,3], policy_activations=['tanh', 'tanh', 'sigmoid'],
             greedy_epsilon=1e-1, word_vectors=np.zeros([1, 128]), name="BetaDOMNet", offsets=(0,0)):
         assert (not env is None), "Env can not be null"
         self.env = env
         self.greedy_epsilon = greedy_epsilon
         self.name = name
-        self.n = self.env.n
         self.dom_max_length = dom_max_length
         self.word_max_length = word_max_length
         self.dom_embedding_size = dom_embedding_size
@@ -100,14 +100,15 @@ class BetaDOMNet(object):
         policy = state
         for i,width in enumerate(self.policy_function_layers):
             policy = tf.keras.layers.Dense(width, activation=self.policy_activations[i])(policy)
-        policy_x = tf.keras.layers.Dense(self.env.screen_shape[0], activation='softmax', name='x-coordinate-action')(policy)
-        policy_y = tf.keras.layers.Dense(self.env.screen_shape[1], activation='softmax', name='y-coordinate-action')(policy)
+        policy_x = tf.keras.layers.Dense(self.env.action_space.n, activation='softmax', name='x-coordinate-action')(policy)
+        # policy_y = tf.keras.layers.Dense(self.env.screen_shape[1], activation='softmax', name='y-coordinate-action')(policy)
         # policy_b = tf.keras.layers.Dense(2, activation='softmax', name='button-mask-action')(policy)
 
         self.model = tf.keras.Model(inputs=[self.dom_word_input, self.dom_shape_input, self.dom_embedding_input, self.instruction_word_input],
-                outputs=[value, [policy_x, policy_y]])
+                outputs=[value, [policy_x,]])
         self.model.run_eagerly = True
         tf.keras.utils.plot_model(self.model, 'model.png', show_shapes=True)
+        self.model.summary()
 
 
     @classmethod
@@ -148,8 +149,7 @@ class BetaDOMNet(object):
             model = self.model
         model_input_list = []
         for i in range(self.n):
-            model_input = self.step_instance_input(
-                    obs[i])
+            model_input = self.step_instance_input(obs[i])
             model_input_list.append(model_input)
         assert len(model_input_list) == self.n, "Expected model_input_list to be of size {} but got {} : {}".format(self.n, len(model_input_list), model_input_list)
         model_input = [np.concatenate([model_input_list[j][i] for j in range(self.n)],
@@ -160,7 +160,6 @@ class BetaDOMNet(object):
         for i in range(self.n):
             action, action_log_prob = self.step_policy([
                 policy[0][i],
-                policy[1][i],
                 ])
             action_list.append(action)
             action_log_prob_list.append(action_log_prob)
@@ -172,11 +171,8 @@ class BetaDOMNet(object):
         ru = np.random.uniform()
         sample = self.env.action_space.sample()
         if ru > self.greedy_epsilon:
-            x,y = np.argmax(tf.squeeze(policy_raw[0])), \
-                    np.argmax(tf.squeeze(policy_raw[1]))
-            sample = self.env.env._index(x + self.offsets[0],y + self.offsets[1])
-        x, y = self.env.env._coords(sample)
-        return sample, utils.get_action_probability(x - self.offsets[0],y - self.offsets[1], policy_raw)
+            sample = np.argmax(tf.squeeze(policy_raw[0]))
+        return sample, utils.get_action_probability(sample, policy_raw)
 
     def step_instance_input(self, betadom_instance):
         instruction = utils.process_text(betadom_instance.query)
@@ -240,11 +236,11 @@ class BetaDOMNet(object):
 if __name__ == "__main__":
     screen_shape = (160, 210)
     env = gym.make("VNC.Core-v0")
-    env = jiminy.actions.experimental.SoftmaxClickMouse(env)
+    env = jiminy.actions.experimental.SoftmaxClickMouse(env, discrete_mouse_step=10)
     env = betaDOM(env)
-    env = BetaDOMNet(env, greedy_epsilon=4e-1, offsets=(0, 75))
+    env = BetaDOMNet(env, greedy_epsilon=1e-1, offsets=(0, 75))
     env.configure(screen_shape=screen_shape, env='sibeshkar/wob-v1', task='ClickButton',
             remotes='vnc://0.0.0.0:5901+15901')
     env.setupEnv()
-    a3c = A3C()
+    a3c = A3C(learning_rate=1e-2)
     a3c.learn(env)
