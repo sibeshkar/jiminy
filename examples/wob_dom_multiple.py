@@ -4,7 +4,7 @@ import time
 
 from lib import wob_vnc
 
-REMOTES_COUNT = 8
+REMOTES_COUNT = 4
 
 if __name__ == "__main__":
     env = gym.make("VNC.Core-v0")

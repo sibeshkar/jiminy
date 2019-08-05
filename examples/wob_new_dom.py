@@ -25,14 +25,16 @@ if __name__ == "__main__":
             print("Env is resetting...")
             continue
         
+        if is_done[0]:
+            print("Reward: {}, Done: {}, Info {}".format(reward, is_done, info['n'][0]['env_status.episode_id']))
+        # print("Sampled action: ", a)
+        # print("Response are of index:", idx)
+        # print("Observation", obs[0]['dom'])
+        # print("Reward", reward)
+        # print("Is done", is_done)
+        # print("Info", info)
         # if is_done[0]:
-        #     print("Reward: {}, Done: {}, Info {}".format(reward, is_done, info['n'][0]['env_status.episode_id']))
-        print("Sampled action: ", a)
-        print("Response are of index:", idx)
-        print("Observation", obs[0]['dom'])
-        print("Reward", reward)
-        print("Is done", is_done)
-        print("Info", info)
+        #     time.sleep(0.5)
         env.render()
 
 
