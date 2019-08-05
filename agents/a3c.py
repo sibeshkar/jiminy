@@ -29,6 +29,7 @@ class A3C(object):
         self.clip_grad = clip_grad
         self.momentum = momentum
         self.queue_lock = threading.Lock()
+        self.weights_lock = threading.Lock()
         self.grad_queue = queue.Queue()
         self.batch_size = batch_size
         logging.debug("A3C object created")
@@ -58,7 +59,7 @@ class A3C(object):
         self.global_step = tf.train.get_or_create_global_step()
         self.kill_flags = [False for _ in range(self.n_workers)]
         self.thread_list = []
-        for i in range(1):
+        for i in range(self.n_workers):
             logging.debug("Starting worker {} implementing A2C".format(i))
             t = threading.Thread(target=self.runner_wrapper, args=(i,))
             t.start()
@@ -90,12 +91,13 @@ class A3C(object):
         return fn
 
     def update_weights(self):
-        with tf.device("/cpu:0"):
+        with tf.device("/gpu:0"):
             try:
                 while True:
                     grad_updates = self.grad_queue.get()
                     grad_updates = zip(grad_updates, self.domnet.model.trainable_weights)
-                    self.opt.apply_gradients(grad_updates)
+                    with self.weights_lock:
+                        self.opt.apply_gradients(grad_updates)
             except:
                 self.close()
 
@@ -113,13 +115,13 @@ class A3C(object):
         logging.debug("Closing A3C master")
 
     def runner_wrapper(self, *args, **kwargs):
-        with tf.device("/cpu:0"):
+        with tf.device("/gpu:0"):
             self.runner(*args, **kwargs)
 
     def runner(self, index, episode_max_length=100, max_step_count=1e6):
         t,t_s = 0,0
         episode = 0
-        action_reset = [ self.env.action_space.sample()  for _ in range(self.n_workers)]
+        action_reset = self.env.action_space.sample()
         while True:
             grads_policy, grads_value = None, None
             with tf.GradientTape() as tape:
@@ -134,13 +136,18 @@ class A3C(object):
                         # exit if the process has run for maximum number of episodes
                         if self.T >= max_step_count: return
                         t_s = t
-                    obs = self.env.reset()
+                    obs = self.env.reset_runner(index)
                     # action = self.env.action_space.sample()
-                    while obs is None or None in obs:
+                    while True:
                         time.sleep(0.05)
-                        obs, _, _, _ = self.env.step(action_reset)
+                        obs, _, _, _ = self.env.step_runner(index, action_reset)
+                        if obs is None:
+                            continue
+                        if obs.query == "":
+                            continue
+                        break
                     print("Starting episode: {}".format(episode))
-                    self.env.step(action_reset)
+                    self.env.step_runner(index, action_reset)
                     done,value = False, None
 
                     # synchoronize model from master
@@ -148,24 +155,22 @@ class A3C(object):
                     flag = True
 
                     # run episode for max_length time steps
-                    while (not done or False in done) and t - t_s < episode_max_length:
-                        if obs is None:
+                    while (not done) and t - t_s < episode_max_length:
+                        if obs is None or obs.query == "":
                             if t - t_s == 0:
                                 print("Timed-out", end="")
                             else:
                                 print("Ending episode cuz of error", end="")
                             break
-                        state, value, action, action_log_prob = self.domnet.step(obs)
-                        if value is None:
-                            obs, _, done, info = self.env.step(action_reset)
-                            print(obs.objects)
+                        with self.weights_lock:
+                            state, value, action, action_log_prob = self.domnet.step_runner(index, obs)
+                        if value is None :
+                            obs, _, done, info = self.env.step_runner(index, action_reset)
                             break
                         value_log[t], action_log_prob_log[t] = tf.convert_to_tensor(value), tf.convert_to_tensor(action_log_prob)
-                        obs, reward_log[t], done, info = self.env.step(action)
+                        obs, reward_log[t], done, info = self.env.step_runner(index, action)
                         with self.queue_lock:
                             self.T += 1
-                        if not done or False in done:
-                            print(".", end="")
                         t+=1
                         flag = False
                         sys.stdout.flush()
@@ -174,18 +179,19 @@ class A3C(object):
                         continue
 
                     # Accumulate gradients from this run
-                    bootstrap_value = tf.constant([0. for _ in range(self.n_workers)])
-                    # val = action_log_prob_log[t-1]*(tf.constant(reward_log[t-1]) - value_log[t-1])
-                    if not done or False in done:
+                    bootstrap_value = tf.constant(0.)
+                    if not done:
                         bootstrap_value = tf.stop_gradient(value_log[t-1])
                     for i in range(t-1, t_s-1, -1):
                         bootstrap_value = (self.gamma*bootstrap_value) + tf.constant(reward_log[i])
+                        loss_policy = -action_log_prob_log[i]*tf.stop_gradient(bootstrap_value)
+                        loss_value = tf.square(tf.stop_gradient(bootstrap_value) - value_log[i])
                         if grads_policy is None: grads_policy = loss_policy
                         else: grads_policy += loss_policy
                         if grads_value is None: grads_value = loss_value
                         else: grads_value += loss_value
                     loss = tf.reduce_sum((grads_policy + grads_value) / (batch+1))
-                    print(loss.numpy(), grads_value / (batch+1), value_log[t-1], reward_log[t-1])
+                    print("Thread: {} -- ".format(index), loss.numpy(), grads_value.numpy() / (batch+1), value_log[t-1].numpy(), reward_log[t-1])
                     with tf.contrib.summary.always_record_summaries():
                         tf.contrib.summary.scalar('global_step', self.global_step)
                         tf.contrib.summary.scalar('value_error', loss_value)
@@ -194,7 +200,7 @@ class A3C(object):
                         tf.contrib.summary.scalar('total_loss', loss)
 
             # compute gradients wrt used weights
-            with tf.device("/cpu:0"):
+            with tf.device("/gpu:0"):
                 tstart = time.time()
                 grad_update = tape.gradient(loss, self.domnet.model.trainable_weights)
                 # exit if kill flag is set

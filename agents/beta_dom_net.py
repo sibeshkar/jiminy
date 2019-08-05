@@ -5,6 +5,7 @@ from jiminy import vectorized
 # from jiminy.spaces import vnc_event
 # from jiminy.envs import SeleniumWoBEnv
 from jiminy.utils.ml import Vocabulary
+from jiminy.utils.lib import wob_vnc
 import tensorflow as tf
 tf.enable_eager_execution()
 import numpy as np
@@ -130,6 +131,7 @@ class BetaDOMNet(vectorized.Wrapper):
 
     def load(self, path):
         if os.path.exists(path):
+            print("Loading model from: ", path)
             self.model.load_weights(path)
 
     def step_runner(self, index, obs, model=None):
@@ -216,7 +218,7 @@ class BetaDOMNet(vectorized.Wrapper):
         first_set = False
         for idx in range(900000 // waitTime):
             a = self.env.action_space.sample()
-            obs, reward, is_done, info = self.env.step([a])
+            obs, reward, is_done, info = self.env.step([a for _ in range(self.n)])
             if obs[0] is None:
                 if not first_set:
                     print("Env is still resetting...", end="")
@@ -239,8 +241,9 @@ if __name__ == "__main__":
     env = jiminy.actions.experimental.SoftmaxClickMouse(env, discrete_mouse_step=10)
     env = betaDOM(env)
     env = BetaDOMNet(env, greedy_epsilon=1e-1, offsets=(0, 75))
+    remotes_url= wob_vnc.remotes_url(port_ofs=0, hostname='localhost', count=4)
     env.configure(screen_shape=screen_shape, env='sibeshkar/wob-v1', task='ClickButton',
-            remotes='vnc://0.0.0.0:5901+15901')
+            remotes=remotes_url)
     env.setupEnv()
     a3c = A3C(learning_rate=1e-2)
     a3c.learn(env)
