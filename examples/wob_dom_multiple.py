@@ -8,23 +8,22 @@ REMOTES_COUNT = 4
 
 if __name__ == "__main__":
     env = gym.make("VNC.Core-v0")
-    env = jiminy.wrappers.experimental.SoftmaxClickMouse(env)
-    remotes_url= wob_vnc.remotes_url(port_ofs=0, hostname='0.0.0.0', count=REMOTES_COUNT)
+    env = jiminy.actions.experimental.SoftmaxClickMouse(env)
+    remotes_url= wob_vnc.remotes_url(port_ofs=0, hostname='localhost', count=REMOTES_COUNT)
     env.configure(env='sibeshkar/wob-v1', task='ClickButton', remotes=remotes_url)
     observation_n = env.reset()
 
     while True:
-        action_n = [env.action_space.sample() for ob in observation_n]
+        action_n = [env.action_space.sample() for _ in observation_n]
         observation_n, reward_n, done_n, info = env.step(action_n)
-        if observation_n[0]['dom'] is None: #substitute with obs[0]['vision'] for image equivalent
+        if observation_n[0]['dom'] is None:
             print("Env is still resetting...")
             continue
         break
     idx = 0
     while True:
         time.sleep(0.05)
-        #a = env.action_space.sample()
-        action_n = [env.action_space.sample() for ob in observation_n]
+        action_n = [env.action_space.sample() for _ in observation_n]
         observation_n, reward_n, done_n, info = env.step(action_n)
         if observation_n[0]['dom'] is None:
             print("Env is resetting...")

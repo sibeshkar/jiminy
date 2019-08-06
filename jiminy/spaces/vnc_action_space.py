@@ -26,7 +26,9 @@ class VNCActionSpace(Space):
         screen_shape (int, int): The X and Y dimensions of the screen
     """
 
-    def __init__(self, keys=None, buttonmasks=None, screen_shape=(1024, 728)):
+    def __init__(self, keys=None, buttonmasks=None, screen_shape=(1024, 728),
+            event_type=None):
+        self.event_type = event_type
         self.keys = []
         if keys is None:
             keys = [c for c in string.printable] + list(constants.KEYMAP.keys())
@@ -69,19 +71,19 @@ class VNCActionSpace(Space):
 
     def sample(self):
         # Both key and pointer allowed
-        if self.screen_shape is not None:
+        if self.event_type is None:
             event_type = prng.np_random.randint(2)
         else:
-            event_type = 0
+            event_type = self.event_type
 
         if event_type == 0:
             # Let's press a key
             key = prng.np_random.choice(self.keys)
-            event = [key]
+            event = key
         else:
             x = prng.np_random.randint(self.screen_shape[0])
             y = prng.np_random.randint(self.screen_shape[1])
             buttonmask = prng.np_random.choice(self.buttonmasks)
 
-            event = [vnc_event.PointerEvent(x, y, buttonmask)]
+            event = vnc_event.PointerEvent(x, y, buttonmask)
         return event

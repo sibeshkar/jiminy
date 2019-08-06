@@ -3,11 +3,11 @@ import time
 
 from jiminy.gym import spec
 from jiminy import spaces
-from jiminy.envs import vnc_env
+from jiminy.envs.vnc_env import VNCEnv
 
 logger = logging.getLogger(__name__)
 
-class GymCoreEnv(vnc_env.VNCEnv):
+class GymCoreEnv(VNCEnv):
     def __init__(self, gym_core_id, fps=60):
         super(GymCoreEnv, self).__init__()
 

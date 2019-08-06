@@ -19,10 +19,10 @@ from jiminy.gym.envs.registration import register
 
 import jiminy.scoreboard
 import jiminy.configuration
-from jiminy import error, envs, gym
 from jiminy.remotes import docker_remote
 from jiminy.rewarder import merge_infos
 from jiminy.runtimes.registration import runtime_spec
+from jiminy import error, envs, gym
 
 __all__ = [
     'configuration', 'envs', 'error', 'kube', 'pyprofile', 'remotes', 'rewarder', 'runtimes',
@@ -115,7 +115,7 @@ register(
 
 # Should be exactly the same as CartPole-v0
 register(
-    id='gym-core.CartPoleLowDSync-v0',
+    id='jiminy.gym-core.CartPoleLowDSync-v0',
     entry_point='jiminy.wrappers:WrappedGymCoreSyncEnv',
     max_episode_steps=500,
     tags={

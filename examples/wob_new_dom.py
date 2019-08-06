@@ -1,10 +1,13 @@
 import jiminy
 import jiminy.gym as gym
 import time
+from jiminy.global_protos import DomObjectInstance
+import json
+from google.protobuf import json_format
 
 if __name__ == "__main__":
     env = gym.make("VNC.Core-v0")
-    env = jiminy.wrappers.experimental.SoftmaxClickMouse(env)
+    env = jiminy.actions.experimental.SoftmaxClickMouse(env)
 
     env.configure(env='sibeshkar/wob-v1', task='ClickButton', remotes='vnc://0.0.0.0:5901+15901')
     obs = env.reset()
@@ -18,23 +21,21 @@ if __name__ == "__main__":
         break
 
     for idx in range(5000):
+        domobj = DomObjectInstance()
         time.sleep(0.05)
         a = env.action_space.sample()
         obs, reward, is_done, info = env.step([a])
         if obs[0] is None:
             print("Env is resetting...")
             continue
-        
-        if is_done[0]:
-            print("Reward: {}, Done: {}, Info {}".format(reward, is_done, info['n'][0]['env_status.episode_id']))
-        # print("Sampled action: ", a)
-        # print("Response are of index:", idx)
-        # print("Observation", obs[0]['dom'])
-        # print("Reward", reward)
-        # print("Is done", is_done)
-        # print("Info", info)
-        # if is_done[0]:
-        #     time.sleep(0.5)
+        print("Sampled action: ", a)
+        print("Response are of index:", idx)
+        if type(obs[0]['dom']) is str:
+            print(obs[0]['dom'])
+            print("Observation", json_format.Parse(obs[0]['dom'], domobj))
+        print("Reward", reward)
+        print("Is done", is_done)
+        print("Info", info)
         env.render()
 
 

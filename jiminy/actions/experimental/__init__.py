@@ -1,0 +1,1 @@
+from jiminy.actions.experimental.action_space import SoftmaxClickMouse

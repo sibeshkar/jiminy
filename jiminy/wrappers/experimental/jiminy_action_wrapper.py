@@ -24,30 +24,48 @@ class JiminyActionWrapper(vectorized.Wrapper, Wrapper):
 
     When we learn by exploration we get some intrinsically calculated reward for the said action, and return the gradient of the wrt the action taken.
     """
-    def __init__(self, env):
+    def __init__(self, env, targetObject):
+        if env is None:
+            raise ValueError
+        if targetObject is None:
+            raise ValueError
         super(JiminyActionWrapper, self).__init__(env)
         self.env = env
+        self.targetObject = targetObject
         self.state = JiminyActionState.Initiated
 
-    def _control_algorithm(self, targetObject):
+    def _control_algorithm(self):
+        """
+        This should only be called once the targetObject and the targetParams have been set
+        """
         raise NotImplementedError
 
-    def step(self, targetObject):
-        """
-        Unlike the step function in gym
-        we give an additional target to the step function
-        this is because our actions here can perform different things and are actually meta actions
+    def control_algorithm(self):
+        if self.targetObject is None:
+            raise ValueError
+        if self.targetParams is None:
+            raise ValueError
+        self._control_algorithm()
 
-        such as clickable type might move and hover, or left-click or right-click. So instead of three different actions, having a target object ensures we can merge them into one. Even though internally all three will happen independently
+    def step(self):
+        if self.targetParams is None:
+            self.targetParams = self._get_default_params()
+        return self._control_algorithm(self.targetParams)
 
-        or the text which has to be typed into a text-box. While we can type it character by character and re-infer the state and understand the goal, its possible we know the entire text we want to type in the same go, in which case we would like to use this kind of a model to perform a said action
-        """
-        self._check(targetObject)
-        self._control_algorithm(targetObject)
+    def setTarget(self, targetParams=None):
+        if targetParams is None:
+            targetParams = self._get_default_params()
+        self.targetParams = targetParams
+        self._check(targetParams)
+        # return object for chaining
+        return self
 
-    def _check(self, targetObject):
+    def _check_params(self, targetParams):
         """
         Checks if the targetObject is valid for the
         action being taken by the object
         """
+        raise NotImplementedError
+
+    def _get_default_params(self):
         raise NotImplementedError

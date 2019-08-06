@@ -151,8 +151,8 @@ class CoreVNCEnv(vectorized.Env):
                   record=False,
                   sample_env_ids=None,
     ):
-        
-        runtime = 'world-of-bits' #TODO:Remove this in future editions 
+
+        runtime = 'world-of-bits' #TODO:Remove this in future editions
 
         twisty.start_once()
 
@@ -220,7 +220,7 @@ class CoreVNCEnv(vectorized.Env):
             self.diagnostics = None
 
         self._sample_env_ids = sample_env_ids
-        
+
         self._started = True
         if allocate_sync:
             # Block until we've fulfilled n environments
@@ -233,6 +233,17 @@ class CoreVNCEnv(vectorized.Env):
     def _reset(self):
         self._handle_connect()
         return [None] * self.n
+
+    def _reset_runner(self, index):
+        self._handle_connect()
+        return None
+
+    def _step_runner(self, index, action_n):
+        assert self.connection_names[index] is not None, "Can not find connection for index i: {}".format(index)
+        actions = [None for _ in range(self.n)]
+        actions[index] = action_n
+        observation_n, reward_n, done_n, info_n = self.step(actions)
+        return observation_n[index], reward_n[index], done_n[index], info_n
 
     def _step(self, action_n):
         self._handle_connect()
@@ -261,7 +272,7 @@ class CoreVNCEnv(vectorized.Env):
         else:
             visual_observation_n = [None] * self.n
             vnc_err_n = [None] * self.n
-        
+
         observation_n = build_observation_dom_n(visual_observation_n, info_n)
 
         self._handle_initial_n(observation_n, reward_n)
@@ -270,7 +281,7 @@ class CoreVNCEnv(vectorized.Env):
 
 
         return observation_n, reward_n, done_n, {'n': info_n}
-    
+
     def _pop_rewarder_session(self, peek_d):
         with pyprofile.push('vnc_env.VNCEnv.rewarder_session.pop'):
             reward_d, done_d, info_d, err_d = self.rewarder_session.pop(peek_d=peek_d)
@@ -285,7 +296,7 @@ class CoreVNCEnv(vectorized.Env):
             info_n.append(info_d.get(name, {'env_status.disconnected': True}))
             err_n.append(err_d.get(name))
         return reward_n, done_n, info_n, err_n
-    
+
     def _step_vnc_session(self, compiled_d):
         if self._send_actions_over_websockets:
             self.rewarder_session.send_action(compiled_d, self.spec.id)
@@ -306,7 +317,7 @@ class CoreVNCEnv(vectorized.Env):
 
         return observation_n, info_n, err_n
 
-    def _handle_connect(self, n=None):
+    def _handle_connect(self, n=None, index=None):
         # Connect to any environments which are ready
         for remote in self.remote_manager.pop(n=n):
             if remote.name is not None:
@@ -321,6 +332,8 @@ class CoreVNCEnv(vectorized.Env):
     def _action_d(self, action_n):
         action_d = {}
         for i, action in enumerate(action_n):
+            if action is None:
+                continue
             action_d[self.connection_names[i]] = action
         return action_d
 
@@ -342,7 +355,7 @@ class CoreVNCEnv(vectorized.Env):
 
             # TODO: name becomes index:pod_id
             # TODO: never log index, just log name
-        
+
         if self.rewarder_session is not None:
             # if self.spec is not None:
             #     env_id = self.spec.id
@@ -374,7 +387,7 @@ class CoreVNCEnv(vectorized.Env):
             )
         else:
             network = None
-    
+
     def _compile_actions(self, action_n):
         compiled_n = []
         peek_d = {}
@@ -382,6 +395,8 @@ class CoreVNCEnv(vectorized.Env):
             for i, action in enumerate(action_n):
                 compiled = []
                 compiled_n.append(compiled)
+                if action is None:
+                    continue
                 for event in action:
                     # Handle any special control actions
                     if event == spaces.PeekReward:
@@ -466,7 +481,7 @@ class CoreVNCEnv(vectorized.Env):
 
             self.crashed[i] = self.connection_names[i]
             self._close(i)
-    
+
     def _handle_crashed_n(self, info_n):
         # for i in self.crashed:
         #     info_n[i]['env_status.crashed'] = True
@@ -485,7 +500,7 @@ class CoreVNCEnv(vectorized.Env):
             else:
                 raise error.Error('{}/{} environments have crashed! Most recent error: {}'.format(len(self.crashed), self.n, errors))
 
-    
+
     def __str__(self):
         return 'CoreVNCEnv'
 
@@ -529,9 +544,9 @@ class DummyVNCEnvFinal(vectorized.Env):
         pass
     def __str__(self):
         pass
-    
-    
-    
 
-    
-    
+
+
+
+
+

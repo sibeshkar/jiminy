@@ -20,6 +20,10 @@ setup(name='jiminy',
           'six>=1.10.0',
           'twisted>=16.5.0',
           'ujson>=1.35',
+          'opencv-python>=4.0',
+          'selenium>=3.140.0',
+          'pydot>=1.3',
+          'graphviz>=0.11'
       ],
       package_data={'jiminy': ['runtimes.yml', 'runtimes/flashgames.json']},
       tests_require=['pytest']

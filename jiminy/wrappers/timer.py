@@ -28,3 +28,9 @@ via pyprofile.
             sleep = 0
         pyprofile.timing('vnc_env.Timer.step.excluding_sleep', time.time() - start - sleep)
         return observation_n, reward_n, done_n, info
+
+    def _reset_runner(self, index):
+        return self.env.reset_runner(index)
+
+    def _step_runner(self, index, action_n):
+        return self.env.step_runner(index, action_n)

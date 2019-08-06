@@ -1,0 +1,13 @@
+previous
+submit
+next
+none
+click
+on
+the
+yes
+no
+ok
+okay
+button
+cancel
