@@ -3,10 +3,11 @@ version: '3.3'
 services:
    vnc-remote:
      image: sibeshkar/jiminy-env:detached
+     #command: ["jiminy","run","sibeshkar/wob-v1/ClickButton"]
      deploy:
       replicas: 4
      ports:
-       - "5900-5903:5901"
+       - "5900-5903:5900"
        - "15900-15903:15900"
 # services:
 #    vnc-remote:
