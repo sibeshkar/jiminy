@@ -28,9 +28,6 @@ if __name__ == "__main__":
         if obs[0] is None:
             print("Env is resetting...")
             continue
-
-        # if is_done[0]:
-        #     print("Reward: {}, Done: {}, Info {}".format(reward, is_done, info['n'][0]['env_status.episode_id']))
         print("Sampled action: ", a)
         print("Response are of index:", idx)
         if type(obs[0]['dom']) is str:

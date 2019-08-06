@@ -3,12 +3,17 @@ version: '3.3'
 services:
    vnc-remote:
      image: sibeshkar/jiminy-env:detached
-     #command: ["jiminy","run","sibeshkar/wob-v1/ClickButton"]
      deploy:
       replicas: 4
      ports:
        - "5900-5903:5900"
        - "15900-15903:15900"
+       - "4800-4803:6080"
+   dashboard:
+     image: sibeshkar/jiminydash:latest
+     depends_on: 
+       - vnc-remote
+     network_mode: "host"
 # services:
 #    vnc-remote:
 #      image: sibeshkar/jiminywob:latest

@@ -20,8 +20,8 @@ if __name__ == "__main__":
             print("Env is still resetting...")
             continue
         break
-
-    for idx in range(5000):
+    idx = 0
+    while True:
         time.sleep(0.05)
         action_n = [env.action_space.sample() for _ in observation_n]
         observation_n, reward_n, done_n, info = env.step(action_n)
@@ -34,6 +34,7 @@ if __name__ == "__main__":
         print("Reward", reward_n)
         print("Is done", done_n)
         print("Info", info)
+        idx+=1
         env.render()
 
 
