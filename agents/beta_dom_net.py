@@ -1,3 +1,4 @@
+import threading
 import jiminy
 from jiminy.representation.structure import betaDOM
 from jiminy import gym
@@ -7,7 +8,6 @@ from jiminy import vectorized
 from jiminy.utils.ml import Vocabulary
 from jiminy.utils.lib import wob_vnc
 import tensorflow as tf
-tf.enable_eager_execution()
 import numpy as np
 import utils
 from a3c import A3C
@@ -15,6 +15,7 @@ import time
 import sys
 import logging
 import os
+import queue
 
 # from file_initializer import FileInitializer
 
@@ -47,6 +48,7 @@ class BetaDOMNet(vectorized.Wrapper):
         self.policy_function_layers = policy_function_layers
         self.policy_activations = policy_activations
         self.offsets = offsets
+        self.weights_lock = threading.Lock()
 
     def create_model(self):
         ################################ LAYERS for the model #####################################
@@ -107,8 +109,8 @@ class BetaDOMNet(vectorized.Wrapper):
 
         self.model = tf.keras.Model(inputs=[self.dom_word_input, self.dom_shape_input, self.dom_embedding_input, self.instruction_word_input],
                 outputs=[value, [policy_x,]])
-        self.model.run_eagerly = True
         tf.keras.utils.plot_model(self.model, 'model.png', show_shapes=True)
+        self.graph = tf.get_default_graph()
         self.model.summary()
 
 
@@ -127,7 +129,8 @@ class BetaDOMNet(vectorized.Wrapper):
                 word_vectors=None, name=config["name"], betadom=betadom)
 
     def save(self, path):
-        self.model.save_weights(path)
+        with self.sess.as_default():
+            self.model.save_weights(path)
 
     def load(self, path):
         if os.path.exists(path):
@@ -140,32 +143,35 @@ class BetaDOMNet(vectorized.Wrapper):
         betadom_instance = obs
         model_input = self.step_instance_input(betadom_instance)
         if model_input is None:
-            logging.debug("Returning cuz shit")
+            logging.debug("Model input is None, unknown environment state")
             return betadom_instance, None, None, None
-        value, policy = model(model_input)
+        self.observation_buffer[index].put(model_input, block=False)
+        value, policy = self.buffered_result[index]
+        if value is None:
+            return betadom_instance, value, policy, None
         action, action_log_prob = self.step_policy(policy)
-        return betadom_instance, value[0], action, action_log_prob
+        return model_input, value, action, action_log_prob
 
-    def step(self, obs, model=None):
-        if model is None:
-            model = self.model
-        model_input_list = []
-        for i in range(self.n):
-            model_input = self.step_instance_input(obs[i])
-            model_input_list.append(model_input)
-        assert len(model_input_list) == self.n, "Expected model_input_list to be of size {} but got {} : {}".format(self.n, len(model_input_list), model_input_list)
-        model_input = [np.concatenate([model_input_list[j][i] for j in range(self.n)],
-            axis=0) for i in range(4)]
-        value, policy = model(model_input)
-        action_list = []
-        action_log_prob_list = []
-        for i in range(self.n):
-            action, action_log_prob = self.step_policy([
-                policy[0][i],
-                ])
-            action_list.append(action)
-            action_log_prob_list.append(action_log_prob)
-        return obs, value, action_list, action_log_prob_list
+    # def step(self, obs, model=None):
+    #     if model is None:
+    #         model = self.model
+    #     model_input_list = []
+    #     for i in range(self.n):
+    #         model_input = self.step_instance_input(obs[i])
+    #         model_input_list.append(model_input)
+    #     assert len(model_input_list) == self.n, "Expected model_input_list to be of size {} but got {} : {}".format(self.n, len(model_input_list), model_input_list)
+    #     model_input = [np.concatenate([model_input_list[j][i] for j in range(self.n)],
+    #         axis=0) for i in range(4)]
+    #     value, policy = model(model_input)
+    #     action_list = []
+    #     action_log_prob_list = []
+    #     for i in range(self.n):
+    #         action, action_log_prob = self.step_policy([
+    #             policy[0][i],
+    #             ])
+    #         action_list.append(action)
+    #         action_log_prob_list.append(action_log_prob)
+    #     return obs, value, action_list, action_log_prob_list
 
     def step_policy(self, policy_raw):
         # make this nicer??
@@ -173,7 +179,7 @@ class BetaDOMNet(vectorized.Wrapper):
         ru = np.random.uniform()
         sample = self.env.action_space.sample()
         if ru > self.greedy_epsilon:
-            sample = np.argmax(tf.squeeze(policy_raw[0]))
+            sample = np.argmax(np.squeeze(policy_raw[0]))
         return sample, utils.get_action_probability(sample, policy_raw)
 
     def step_instance_input(self, betadom_instance):
@@ -198,8 +204,8 @@ class BetaDOMNet(vectorized.Wrapper):
                     for obj in clickable_object_list]),
                 self.dom_max_length, axis=0)
         model_input = [tag_text_input, tag_bounding_box, tag_input, instruction_input]
-        model_input = [tf.convert_to_tensor(np.expand_dims(arr, 0), convert_to_tf_dtype(arr.dtype)) for arr in model_input]
-        # print([inp.shape.as_list() for inp in model_input])
+        model_input = [np.expand_dims(arr, 0) for arr in model_input]
+        # model_input = [tf.convert_to_tensor(np.expand_dims(arr, 0), convert_to_tf_dtype(arr.dtype)) for arr in model_input]
         return model_input
 
     def get_runner_instance(self):
@@ -208,6 +214,31 @@ class BetaDOMNet(vectorized.Wrapper):
     def configure(self, *args, **kwargs):
         self.env.configure(*args, **kwargs)
         self.create_model()
+        self.update_threads = [threading.Thread(target=self.update_state, args=(i,)) for i in range(self.n)]
+        self.observation_buffer_lock = [threading.Lock() for _ in range(self.n)]
+        self.observation_buffer = [queue.Queue() for _ in range(self.n)]
+        self.buffered_result = [(None,None) for _ in range(self.n)]
+
+    def update_state(self, index):
+        model_input = None
+        while True:
+            while True:
+                try:
+                    model_input = self.observation_buffer[index].get(timeout=0.01)
+                except queue.Empty:
+                    break
+            if model_input is None:
+                time.sleep(0.1)
+                continue
+            with self.graph.as_default():
+                with self.sess.as_default():
+                    tf.keras.backend.set_session(self.sess)
+                    with self.weights_lock:
+                        output = self.model.predict(list(model_input))
+                    output = [np.squeeze(op) for op in output]
+                    model_input = None
+            with self.observation_buffer_lock[index]:
+                self.buffered_result[index] = output
 
     def reset(self):
         return self.env.reset()
@@ -241,9 +272,9 @@ if __name__ == "__main__":
     env = jiminy.actions.experimental.SoftmaxClickMouse(env, discrete_mouse_step=10)
     env = betaDOM(env)
     env = BetaDOMNet(env, greedy_epsilon=1e-1, offsets=(0, 75))
-    remotes_url= wob_vnc.remotes_url(port_ofs=0, hostname='localhost', count=4)
-    env.configure(screen_shape=screen_shape, env='sibeshkar/wob-v1', task='ClickButton',
+    a3c = A3C(env=env, learning_rate=1e-2)
+    remotes_url= wob_vnc.remotes_url(port_ofs=0, hostname='localhost', count=2)
+    a3c.configure(screen_shape=screen_shape, env='sibeshkar/wob-v1', task='ClickButton',
             remotes=remotes_url)
-    env.setupEnv()
-    a3c = A3C(learning_rate=1e-2)
-    a3c.learn(env)
+    a3c.domnet.setupEnv()
+    a3c.learn()

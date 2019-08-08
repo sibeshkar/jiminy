@@ -1,4 +1,3 @@
-from jiminy.spaces import vnc_event
 import tensorflow as tf
 import numpy as np
 import string
@@ -32,7 +31,7 @@ def load_lines_ff(fname):
     return lines
 
 def get_action_probability(x,probs):
-    action_log_prob = tf.math.log(tf.squeeze(probs[0])[x])
+    action_log_prob = np.log(probs[x])
     return action_log_prob
 
 def process_bounding_box(boundingBox):
