@@ -3,9 +3,13 @@ Vocabulary object for use with enttity <-> vector representations
 """
 import numpy as np
 import json
+import tensorflow as tf
 
 class Vocabulary(object):
-    def __init__(self, objectlist):
+    def __init__(self, objectlist, pretrained=None):
+        self.pretrained = pretrained
+        if self.pretrained is None:
+            self.pretrained = dict()
         objectlist += ['NONE']
         self.key2sym = dict()
         self.sym2key = dict()
@@ -37,3 +41,23 @@ class Vocabulary(object):
     def from_config(cls, config):
         objectList = json.loads(config)
         return cls(objectList)
+
+    def get_embedding_initializer(self, shape=(None, 50)):
+        if self.pretrained is None:
+            print("Using random embeddings")
+            return tf.keras.initializer.RandomUniform(minval=-1.0, maxval=1.0)
+        self.pretrained['NONE'] = np.random.uniform(-1., 1., size=shape[-1])
+        embedding_matrix = np.array([self.pretrained[obj] for obj in self.objectList])
+        class EmbeddingInit(tf.keras.initializers.Initializer):
+            def __init__(self, embedding_matrix):
+                super(EmbeddingInit, self).__init__()
+                self.embedding_matrix = embedding_matrix
+
+            def __call__(self, shape, dtype=None, partition_info=None):
+                assert self.embedding_matrix.shape == shape, "Shape mismatch: {} expected : {}".format(self.embedding_matrix.shape, shape)
+                try :
+                    tensor = tf.convert_to_tensor(self.embedding_matrix, dtype=dtype)
+                except:
+                    assert False, "Could not convert shape from {} to required {}".format(self.embedding_matrix.dtype, dtype)
+                return tensor
+        return EmbeddingInit(embedding_matrix)

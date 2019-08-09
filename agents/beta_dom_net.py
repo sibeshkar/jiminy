@@ -27,12 +27,13 @@ def convert_to_tf_dtype(dtype):
     return tf.float32
 
 class BetaDOMNet(vectorized.Wrapper):
-    def __init__(self, env=None, dom_embedding_size=128, dom_max_length=15,
-            word_embedding_size=128, word_dict=["null"],
+    def __init__(self, env=None, dom_embedding_size=50, dom_max_length=15,
+            word_embedding_size=50, word_dict=["click", "text", "input", "button", "on", "the", "previous", "okay", "ok", "next", "submit", "yes", "no"],
             dom_object_type_list=["input", "click", "text"], word_max_length=15,
-            value_function_layers=[64,32,1], value_activations=['tanh', 'tanh', 'tanh'],
-            policy_function_layers=[64,32,3], policy_activations=['tanh', 'tanh', 'sigmoid'],
-            greedy_epsilon=1e-1, word_vectors=np.zeros([1, 128]), name="BetaDOMNet", offsets=(0,0)):
+            value_function_layers=[64,32,1], value_activations=['relu', 'relu', 'tanh'],
+            policy_function_layers=[64,32,3], policy_activations=['relu', 'relu', 'relu'],
+            greedy_epsilon=1e-1, word_vectors=np.zeros([1, 128]), name="BetaDOMNet", offsets=(0,0),
+            pretrained_vectors="./vectors.npy"):
         assert (not env is None), "Env can not be null"
         self.env = env
         self.greedy_epsilon = greedy_epsilon
@@ -49,20 +50,23 @@ class BetaDOMNet(vectorized.Wrapper):
         self.policy_activations = policy_activations
         self.offsets = offsets
         self.weights_lock = threading.Lock()
+        if pretrained_vectors is not None:
+            self.pretrained_vectors = dict(np.load(pretrained_vectors, allow_pickle=True).item())
+
 
     def create_model(self):
         ################################ LAYERS for the model #####################################
-        # self.dom_embedding
-        self.dom_embedding_vocab = Vocabulary(self.dom_object_type_list)
+        self.dom_embedding_vocab = Vocabulary(self.dom_object_type_list, pretrained=self.pretrained_vectors)
         self.dom_embedding_layer = tf.keras.layers.Embedding(self.dom_embedding_vocab.length,
                 output_dim=self.dom_embedding_size,
-                name="tag_embedder")
+                embeddings_initializer=self.dom_embedding_vocab.get_embedding_initializer(),
+                name="tag_embedder", trainable=False)
 
         # word embedding
-        self.word_dict = Vocabulary(self.word_dict)
+        self.word_dict = Vocabulary(self.word_dict, pretrained=self.pretrained_vectors)
         self.word_embedding_layer = tf.keras.layers.Embedding(self.word_dict.length,
                 output_dim=self.word_embedding_size,
-                # embeddings_initializer=tf.keras.initializers.Constant(word_vectors),
+                embeddings_initializer=self.word_dict.get_embedding_initializer(),
                 trainable=False, name="word_embedding_layer")
 
         self.word_bilstm_layer = tf.keras.layers.Bidirectional(layer=tf.keras.layers.LSTM(64,
@@ -82,9 +86,10 @@ class BetaDOMNet(vectorized.Wrapper):
         ################################ Bringing together the model #####################################
         dom_word_embedding = self.word_embedding_layer(self.dom_word_input)
         dom_tag_embedding = self.dom_embedding_layer(self.dom_embedding_input)
-        # dom_tag_embedding = (dom_tag_embedding)
-        # shapecheck: dom_word_embedding: [batch_size, dom_max_length, word_embedding]
-        dom_embedding = tf.concat([dom_word_embedding, self.dom_shape_input, dom_tag_embedding], axis=-1, name="full_dom_embedding")
+        dom_embedding = tf.concat(
+                [dom_word_embedding, self.dom_shape_input, dom_tag_embedding],
+                axis=-1,
+                name="full_dom_embedding")
 
         # instruction embedding
         instruction_embeddings = self.word_embedding_layer(self.instruction_word_input)
@@ -92,20 +97,17 @@ class BetaDOMNet(vectorized.Wrapper):
         instruction_embedding, _ = utils.attention_layer(64, lstm_results[1], lstm_results[0])
 
         # creating the final state
-        state,_ = utils.attention_layer(64, instruction_embedding, dom_embedding)
+        state,_ = utils.attention_layer(128, instruction_embedding, dom_embedding)
 
         # value function
         value = state
         for i,width in enumerate(self.value_function_layers):
             value = tf.keras.layers.Dense(width, activation=self.value_activations[i])(value)
 
-
         policy = state
         for i,width in enumerate(self.policy_function_layers):
             policy = tf.keras.layers.Dense(width, activation=self.policy_activations[i])(policy)
         policy_x = tf.keras.layers.Dense(self.env.action_space.n, activation='softmax', name='x-coordinate-action')(policy)
-        # policy_y = tf.keras.layers.Dense(self.env.screen_shape[1], activation='softmax', name='y-coordinate-action')(policy)
-        # policy_b = tf.keras.layers.Dense(2, activation='softmax', name='button-mask-action')(policy)
 
         self.model = tf.keras.Model(inputs=[self.dom_word_input, self.dom_shape_input, self.dom_embedding_input, self.instruction_word_input],
                 outputs=[value, [policy_x,]])
@@ -135,7 +137,10 @@ class BetaDOMNet(vectorized.Wrapper):
     def load(self, path):
         if os.path.exists(path):
             print("Loading model from: ", path)
-            self.model.load_weights(path)
+            try:
+                self.model.load_weights(path)
+            except:
+                return
 
     def step_runner(self, index, obs, model=None):
         if model is None:
@@ -179,7 +184,7 @@ class BetaDOMNet(vectorized.Wrapper):
         ru = np.random.uniform()
         sample = self.env.action_space.sample()
         if ru > self.greedy_epsilon:
-            sample = np.argmax(np.squeeze(policy_raw[0]))
+            sample = np.argmax(np.squeeze(policy_raw))
         return sample, utils.get_action_probability(sample, policy_raw)
 
     def step_instance_input(self, betadom_instance):
@@ -272,7 +277,7 @@ if __name__ == "__main__":
     env = jiminy.actions.experimental.SoftmaxClickMouse(env, discrete_mouse_step=10)
     env = betaDOM(env)
     env = BetaDOMNet(env, greedy_epsilon=1e-1, offsets=(0, 75))
-    a3c = A3C(env=env, learning_rate=1e-2)
+    a3c = A3C(env=env, learning_rate=1e-3)
     remotes_url= wob_vnc.remotes_url(port_ofs=0, hostname='localhost', count=2)
     a3c.configure(screen_shape=screen_shape, env='sibeshkar/wob-v1', task='ClickButton',
             remotes=remotes_url)

@@ -44,13 +44,15 @@ class A3C(object):
     def create_model(self):
         with self.domnet.graph.as_default():
             bootstrap_input = tf.keras.Input(shape=(1,))
+            tf.summary.scalar('episode_reward', bootstrap_input[-1][0])
             model_input = [tf.keras.Input(shape=obj.shape.as_list()[1:], dtype=obj.dtype) for obj in self.domnet.model.inputs]
             action_index = tf.keras.Input(shape=(self.domnet.env.action_space.n,))
 
             model_output = self.domnet.model(model_input)
 
-            policy_loss = -tf.reduce_sum(tf.reduce_sum(action_index*tf.math.log(model_output[1][0]), axis=-1) * bootstrap_input)
+            policy_loss = -tf.reduce_sum(tf.reduce_sum(action_index*tf.math.log(model_output[1][0]), axis=-1) * (bootstrap_input - model_output[0]))
             value_loss = tf.keras.losses.MSE(model_output[0], bootstrap_input)
+            tf.summary.scalar('value_loss', tf.reduce_mean(value_loss))
             loss = value_loss + policy_loss
             self.model = tf.keras.Model(inputs=[bootstrap_input] +  model_input + [action_index], outputs=loss)
             def loss_fn(y_true, y_pred):
@@ -67,10 +69,9 @@ class A3C(object):
     def learn(self):
         logging.debug("Started A3C learner")
 
-        writer = tf.contrib.summary.create_file_writer(self.logdir + "/" + str(time.time()))
-        writer.set_as_default()
+        self.writer = tf.summary.FileWriter(self.logdir + "/" + str(time.time()))
 
-        self.domnet.load(self.logdir + "a3c.h5")
+        self.domnet.load(self.logdir + "/a3c.h5")
         self.env = self.domnet.env
         self.n_workers = self.env.n
         self.T = 0
@@ -183,7 +184,6 @@ class A3C(object):
                         break
                     state, value, action, action_log_prob = self.domnet.step_runner(index, obs)
                     if value is None :
-                        print("Sending action_reset")
                         obs, _, done, info = self.env.step_runner(index, action_reset)
                         continue
                     value_log[t], action_log_prob_log[t], state_log[t] = value, action_log_prob, state
@@ -209,10 +209,11 @@ class A3C(object):
                 for i in range(t-1, t_s-1, -1):
                     bootstrap_value = (self.gamma*bootstrap_value) + reward_log[i]
                     bootstrap_log[i] = bootstrap_value
-                with tf.contrib.summary.always_record_summaries():
-                    tf.contrib.summary.scalar('value_error', value_log[t-1])
-                    tf.contrib.summary.scalar('final_reward', tf.constant(reward_log[t-1]))
-                    tf.contrib.summary.scalar('episode_reward', bootstrap_value)
+                # with tf.contrib.summary.always_record_summaries():
+                #     print("Recording summary")
+                #     tf.contrib.summary.scalar('value_error', value_log[t-1])
+                #     tf.contrib.summary.scalar('final_reward', tf.constant(reward_log[t-1]))
+                #     tf.contrib.summary.scalar('episode_reward', bootstrap_value)
 
             if len(state_log) == 0:
                 print("No states found for entire batch")
@@ -222,15 +223,18 @@ class A3C(object):
             merged_state = [np.concatenate([state[i] for state in list(state_log.values())], axis=0)
                     for i in range(4)]
             tstart = time.time()
-            bootstrap_input = np.expand_dims(np.array(list(bootstrap_log.values())[:len(bootstrap_log)-1]), axis=-1)
+            bootstrap_input = np.expand_dims(np.array(list(bootstrap_log.values())[1:]), axis=-1)
             action_input = np.array(list(action_log.values()), dtype=np.int32)
             feed_list = [bootstrap_input] + merged_state + [action_input]
             feed_dict ={self.model.inputs[i].name[:-2]: feed_list[i] for i in range(len(self.model.inputs))}
+            feed_dict_logs ={self.model.inputs[i].name : feed_list[i] for i in range(len(self.model.inputs))}
             # grad_update = self.domnet.sess.run([tf.gradients(self.model.output, self.domnet.model.trainable_weights)], feed_dict=feed_dict)
                 # exit if kill flag is set
             with self.domnet.weights_lock:
                     # print(feed_dict)
                     self.model.fit(feed_dict)
+                    summary = self.domnet.sess.run(self.merged, feed_dict=feed_dict_logs)
+                    self.writer.add_summary(summary, time.time())
                     # print(grad_update)
                     # self.grad_queue.put(grad_update, block=False)
                     if self.kill_flags[index]: return
@@ -241,6 +245,7 @@ class A3C(object):
         self.domnet.configure(*args, **kwargs)
         self.create_model()
         self.domnet.sess = tf.Session(graph=self.domnet.graph)
+        self.merged = tf.summary.merge_all()
         self.domnet.sess.run(tf.global_variables_initializer())
         for thread in self.domnet.update_threads:
             thread.start()
