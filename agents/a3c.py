@@ -52,13 +52,18 @@ class A3C(object):
 
             policy_loss = -tf.reduce_sum(tf.reduce_sum(action_index*tf.math.log(model_output[1][0]), axis=-1) * (bootstrap_input - model_output[0]))
             value_loss = tf.keras.losses.MSE(model_output[0], bootstrap_input)
+
+            entropy_loss = tf.keras.losses.categorical_crossentropy(model_output[1][0], model_output[1][0])
+
             tf.summary.scalar('value_loss', tf.reduce_mean(value_loss))
-            loss = value_loss + policy_loss
+            tf.summary.scalar('entropy_loss', tf.reduce_mean(entropy_loss))
+            loss = 0.5*value_loss + policy_loss # - self.entropy_beta*entropy_loss
             self.model = tf.keras.Model(inputs=[bootstrap_input] +  model_input + [action_index], outputs=loss)
             def loss_fn(y_true, y_pred):
                 return y_pred
             self.model.compile(loss=loss_fn,
-                    optimizer=tf.keras.optimizers.Adam(learning_rate=self.learning_rate))
+                    optimizer=tf.keras.optimizers.RMSprop(learning_rate=self.learning_rate,
+                        clipnorm=1.0))
 
     @classmethod
     def from_config(cls, config):
@@ -75,6 +80,7 @@ class A3C(object):
         self.env = self.domnet.env
         self.n_workers = self.env.n
         self.T = 0
+        self.episode_count = 0
         self.global_step = tf.train.get_or_create_global_step()
         self.kill_flags = [False for _ in range(self.n_workers)]
         self.thread_list = []
@@ -177,14 +183,13 @@ class A3C(object):
                 # run episode for max_length time steps
                 while (not done) and t - t_s < episode_max_length:
                     if obs is None or obs.query == "":
-                        if t - t_s == 0:
-                            print("Timed-out", end="")
-                        else:
-                            print("Ending episode cuz of error", end="")
-                        break
+                        obs, _, done, info = self.env.step_runner(index, action_reset)
+                        time.sleep(1)
+                        continue
                     state, value, action, action_log_prob = self.domnet.step_runner(index, obs)
                     if value is None :
                         obs, _, done, info = self.env.step_runner(index, action_reset)
+                        time.sleep(1)
                         continue
                     value_log[t], action_log_prob_log[t], state_log[t] = value, action_log_prob, state
                     action_log[t] = tf.keras.utils.to_categorical(action, num_classes=self.domnet.env.action_space.n)
@@ -234,7 +239,8 @@ class A3C(object):
                     # print(feed_dict)
                     self.model.fit(feed_dict)
                     summary = self.domnet.sess.run(self.merged, feed_dict=feed_dict_logs)
-                    self.writer.add_summary(summary, time.time())
+                    self.writer.add_summary(summary, self.episode_count)
+                    self.episode_count += 1
                     # print(grad_update)
                     # self.grad_queue.put(grad_update, block=False)
                     if self.kill_flags[index]: return

@@ -107,10 +107,11 @@ class BetaDOMNet(vectorized.Wrapper):
         policy = state
         for i,width in enumerate(self.policy_function_layers):
             policy = tf.keras.layers.Dense(width, activation=self.policy_activations[i])(policy)
-        policy_x = tf.keras.layers.Dense(self.env.action_space.n, activation='softmax', name='x-coordinate-action')(policy)
+        policy_logits = tf.keras.layers.Dense(self.env.action_space.n, name='x-coordinate-action')(policy)
+        policy_action = tf.keras.layers.Activation(activation='softmax')(policy_logits)
 
         self.model = tf.keras.Model(inputs=[self.dom_word_input, self.dom_shape_input, self.dom_embedding_input, self.instruction_word_input],
-                outputs=[value, [policy_x,]])
+                outputs=[value, [policy_action, policy_logits]])
         tf.keras.utils.plot_model(self.model, 'model.png', show_shapes=True)
         self.graph = tf.get_default_graph()
         self.model.summary()
@@ -151,7 +152,9 @@ class BetaDOMNet(vectorized.Wrapper):
             logging.debug("Model input is None, unknown environment state")
             return betadom_instance, None, None, None
         self.observation_buffer[index].put(model_input, block=False)
-        value, policy = self.buffered_result[index]
+        with self.observation_buffer_lock[index]:
+            # print(self.buffered_result[index])
+            value, policy, logits = self.buffered_result[index]
         if value is None:
             return betadom_instance, value, policy, None
         action, action_log_prob = self.step_policy(policy)
@@ -222,7 +225,7 @@ class BetaDOMNet(vectorized.Wrapper):
         self.update_threads = [threading.Thread(target=self.update_state, args=(i,)) for i in range(self.n)]
         self.observation_buffer_lock = [threading.Lock() for _ in range(self.n)]
         self.observation_buffer = [queue.Queue() for _ in range(self.n)]
-        self.buffered_result = [(None,None) for _ in range(self.n)]
+        self.buffered_result = [(None,None, None) for _ in range(self.n)]
 
     def update_state(self, index):
         model_input = None
@@ -277,7 +280,7 @@ if __name__ == "__main__":
     env = jiminy.actions.experimental.SoftmaxClickMouse(env, discrete_mouse_step=10)
     env = betaDOM(env)
     env = BetaDOMNet(env, greedy_epsilon=1e-1, offsets=(0, 75))
-    a3c = A3C(env=env, learning_rate=1e-3)
+    a3c = A3C(env=env, learning_rate=1e-4)
     remotes_url= wob_vnc.remotes_url(port_ofs=0, hostname='localhost', count=2)
     a3c.configure(screen_shape=screen_shape, env='sibeshkar/wob-v1', task='ClickButton',
             remotes=remotes_url)
