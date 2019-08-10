@@ -50,11 +50,14 @@ class A3C(object):
 
             model_output = self.domnet.model(model_input)
 
+            print(model_output[1][0].shape)
+            # policy_loss = tf.keras.losses.categorical_crossentropy(bootstrap_input * action_index, model_output[1][0])
+
             policy_loss = -tf.reduce_sum(tf.reduce_sum(action_index*tf.math.log(model_output[1][0]), axis=-1) * (bootstrap_input - model_output[0]))
             value_loss = tf.keras.losses.MSE(model_output[0], bootstrap_input)
+            tf.summary.scalar('policy_loss', tf.reduce_mean(policy_loss))
             tf.summary.scalar('value_loss', tf.reduce_mean(value_loss))
-            loss = value_loss + policy_loss
-            self.model = tf.keras.Model(inputs=[bootstrap_input] +  model_input + [action_index], outputs=loss)
+            self.model = tf.keras.Model(inputs=[bootstrap_input] +  model_input + [action_index], outputs=policy_loss)
             def loss_fn(y_true, y_pred):
                 return y_pred
             self.model.compile(loss=loss_fn,
@@ -177,14 +180,13 @@ class A3C(object):
                 # run episode for max_length time steps
                 while (not done) and t - t_s < episode_max_length:
                     if obs is None or obs.query == "":
-                        if t - t_s == 0:
-                            print("Timed-out", end="")
-                        else:
-                            print("Ending episode cuz of error", end="")
-                        break
+                        obs, _, done, info = self.env.step_runner(index, action_reset)
+                        time.sleep(0.02)
+                        continue
                     state, value, action, action_log_prob = self.domnet.step_runner(index, obs)
                     if value is None :
                         obs, _, done, info = self.env.step_runner(index, action_reset)
+                        time.sleep(0.02)
                         continue
                     value_log[t], action_log_prob_log[t], state_log[t] = value, action_log_prob, state
                     action_log[t] = tf.keras.utils.to_categorical(action, num_classes=self.domnet.env.action_space.n)
