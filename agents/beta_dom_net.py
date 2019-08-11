@@ -16,6 +16,7 @@ import sys
 import logging
 import os
 import queue
+from argparse import ArgumentParser
 
 # from file_initializer import FileInitializer
 
@@ -273,15 +274,20 @@ class BetaDOMNet(vectorized.Wrapper):
             return
         assert False, "Set up took too long"
 
+arg_parser = ArgumentParser("BetaDOMNet settings")
+arg_parser.add_argument("--learning_rate", dest="learning_rate", type=float,
+        default=1e-3, help="Learning rate")
+
 
 if __name__ == "__main__":
+    args = arg_parser.parse_args()
     screen_shape = (160, 210)
     env = gym.make("VNC.Core-v0")
     env = jiminy.actions.experimental.SoftmaxClickMouse(env, discrete_mouse_step=10)
     env = betaDOM(env)
     env = BetaDOMNet(env, greedy_epsilon=1e-1, offsets=(0, 75))
-    a3c = A3C(env=env, learning_rate=1e-4)
-    remotes_url= wob_vnc.remotes_url(port_ofs=0, hostname='localhost', count=2)
+    a3c = A3C(env=env, learning_rate=args.learning_rate)
+    remotes_url= wob_vnc.remotes_url(port_ofs=0, hostname='localhost', count=4)
     a3c.configure(screen_shape=screen_shape, env='sibeshkar/wob-v1', task='ClickButton',
             remotes=remotes_url)
     a3c.domnet.setupEnv()

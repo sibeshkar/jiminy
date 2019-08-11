@@ -61,7 +61,7 @@ class A3C(object):
             tf.summary.scalar('entropy_loss', tf.reduce_mean(entropy_loss))
             loss = 0.5*value_loss + policy_loss # - self.entropy_beta*entropy_loss
             tf.summary.scalar('policy_loss', tf.reduce_mean(policy_loss))
-            self.model = tf.keras.Model(inputs=[bootstrap_input] +  model_input + [action_index], outputs=loss)
+            self.model = tf.keras.Model(inputs=[bootstrap_input] +  model_input + [action_index], outputs=policy_loss)
             def loss_fn(y_true, y_pred):
                 return y_pred
             self.model.compile(loss=loss_fn,
@@ -253,7 +253,8 @@ class A3C(object):
     def configure(self, *args, **kwargs):
         self.domnet.configure(*args, **kwargs)
         self.create_model()
-        self.domnet.sess = tf.Session(graph=self.domnet.graph)
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.2)
+        self.domnet.sess = tf.Session(graph=self.domnet.graph, config=tf.ConfigProto(gpu_options=gpu_options))
         self.merged = tf.summary.merge_all()
         self.domnet.sess.run(tf.global_variables_initializer())
         for thread in self.domnet.update_threads:
