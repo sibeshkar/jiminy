@@ -11,6 +11,12 @@ from jiminy import spaces
 from jiminy import utils
 from jiminy.vncdriver import fbs_reader, vnc_proxy_server, vnc_client
 from jiminy import spaces as vnc_spaces
+from PIL import Image
+import io
+import cv2
+import numpy as np
+import json
+from ast import literal_eval
 
 filepath = 'recordings/recording_1563174043/proto.rbs'
 
@@ -60,6 +66,7 @@ class VNCDemonstration(object):
         print("StartTime:", self.start_time)
         print("DesktopName:", self.desktopname)
         print("PixelFormat", self.pixel_format)
+
 
 class FBUpdateReader(object):
     def __init__(self, filepath):
@@ -187,10 +194,13 @@ class FBSEventReader(object):
         self.observation_processor = vnc_client.VNCClient()
 
 
-    
 
 
-mer = MergedEventReader(PointerEventReader(filepath),FBUpdateReader(filepath))
+
+
+
+
+# mer = MergedEventReader(PointerEventReader(filepath),FBUpdateReader(filepath))
 
 # while True:
 #     try:
