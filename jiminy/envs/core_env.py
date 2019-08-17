@@ -164,6 +164,7 @@ class CoreVNCEnv(vectorized.Env):
 
         if vnc_kwargs is None:
             vnc_kwargs = {}
+            
 
         logger.info("Configuring the environment...")
 

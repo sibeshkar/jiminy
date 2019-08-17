@@ -1,0 +1,2 @@
+from jiminy.demonstration.event_readers import VNCDemonstration, DemoReader
+from jiminy.demonstration.demo_pb2 import Demonstration
