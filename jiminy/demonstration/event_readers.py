@@ -1,7 +1,9 @@
 from __future__ import print_function
-import demo_pb2
+from jiminy.demonstration.demo_pb2 import Demonstration
 import sys
 import heapq
+import jiminy
+import jiminy.demonstration
 from jiminy import utils
 from jiminy import spaces
 from jiminy import utils
@@ -14,13 +16,20 @@ import numpy as np
 import json
 import shlex
 from subprocess import Popen, PIPE
-
+import os
 
 
 
 class DemoReader(object):
     def __init__(self,filepath):
-        self.demonstration = demo_pb2.Demonstration()
+        """
+        DemoReader is inner most iterator, takes in a .rbs filepath and returns an Iterator Object that returns processed
+        batches like this:
+
+        demo = iter(DemoReader("demo_423412132312.rbs"))
+        obs, actions, rewards, dones, doms = next(demo)
+        """
+        self.demonstration = Demonstration()
         self.initialize_from_file(filepath)
         self.idx = 0
         self.max_length = len(self.demonstration.batches)
@@ -108,14 +117,26 @@ class DemoReader(object):
 filename = "demo_1565953935.rbs"
 
 class VNCDemonstration(object):
+
+    """
+    VNCDemonstration is a helpful wrapper around DemoReader in order to collate a folderful of .rbs files (of the form: server.rbs, client.rbs, record.rbs)
+    into a single .rbs file that DemoReader can process. 
+        demo = iter(DemoReader("demo_423412132312.rbs"))
+        obs, actions, rewards, dones, doms = next(demo)
+    """
     def __init__(self, demo_file=None):
         self.binary_path()
         self.idx = 0
         if demo_file is not None:
             self.initialized = True
-            self.reader = iter(DemoReader(demo_file))
+            self.reader = iter(DemoReader(os.path.abspath(demo_file)))
 
     def create_demo(self, directory, fps=10, speedup=3.0):
+        """
+        Takes in a folderful of recordings of different events and collates all
+        into a single .rbs file using the library: github.com/sibeshkar/demoparser
+        """
+        directory = os.path.abspath(directory)
         cmd = self.bin_path + " -fps=" + str(fps) +  " -speedup=" + str(speedup) + " -directory=" + directory
         code, out , err = get_exitcode_stdout_stderr(cmd)
         print(code, out, err)
@@ -125,10 +146,11 @@ class VNCDemonstration(object):
 
     def binary_path(self):
         from sys import platform
+        path = jiminy.demonstration.__file__[:-11]
         if platform == "linux" or platform == "linux2":
-            self.bin_path = "./demoparser_linux"
+            self.bin_path = path + "bin/demoparser_linux"
         elif platform == "darwin":
-            self.bin_path = "./demoparser_darwin"
+            self.bin_path = path + "bin/demoparser_darwin"
         elif platform == "win32":
             print("Windows Binary not available for demo processing")
 
@@ -140,7 +162,6 @@ class VNCDemonstration(object):
             raise StopIteration
         else:
             return next(self.reader)
-
 
     def play(self):
         if self.initialized:
@@ -166,6 +187,6 @@ def get_exitcode_stdout_stderr(cmd):
     #
     return exitcode, out, err
 
-demo = VNCDemonstration()
-demo.create_demo("recording_1565930432", 20, 3.0)
-demo.play()
+# demo = VNCDemonstration()
+# demo.create_demo("recording_1565930432", 20, 3.0)
+# demo.play()
