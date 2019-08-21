@@ -117,7 +117,6 @@ class DemoReader(object):
 filename = "demo_1565953935.rbs"
 
 class VNCDemonstration(object):
-
     """
     VNCDemonstration is a helpful wrapper around DemoReader in order to collate a folderful of .rbs files (of the form: server.rbs, client.rbs, record.rbs)
     into a single .rbs file that DemoReader can process. 

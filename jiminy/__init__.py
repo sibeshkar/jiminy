@@ -113,6 +113,11 @@ register(
     entry_point='jiminy.wrappers:WrappedCoreVNCEnv',
 )
 
+register(
+    id='Robot-v0',
+    entry_point='jiminy.wrappers:WrappedRobotEnv',
+)
+
 # Should be exactly the same as CartPole-v0
 register(
     id='gym-core.CartPoleLowDSync-v0',
