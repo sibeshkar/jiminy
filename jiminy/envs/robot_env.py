@@ -80,8 +80,8 @@ class RobotEnv(vectorized.Env):
         self._probe_key = probe_key or 0xbeef1
         self._seed_value = None #non-random int given temporarily
         self.rewarder_session = None
-        self.observation_space = spaces.VNCObservationSpace()
-        self.action_space = spaces.VNCActionSpace()
+        self.observation_space = spaces.RobotObservationSpace()
+        self.action_space = spaces.RobotActionSpace()
         self._send_actions_over_websockets = True
         self._skip_network_calibration = True
 
@@ -168,8 +168,8 @@ class RobotEnv(vectorized.Env):
 
         action_n, peek_d = self._compile_actions(action_n)
 
-        # if self._send_actions_over_websockets:
-        #     self.rewarder_session.send_action(action_n, self.spec.id)
+        if self._send_actions_over_websockets:
+            self.rewarder_session.send_action(action_n, self.spec.id)
 
         if self.rewarder_session:
             reward_n, done_n, info_n, err_n = self._pop_rewarder_session(peek_d)
