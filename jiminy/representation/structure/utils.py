@@ -2,11 +2,15 @@ import os
 import cv2
 import datetime
 import numpy as np
-from jiminy.gym import Space
+# from jiminy.gym import Space
 
 def getLabelForInput(inputObject, webdriver):
     name = inputObject.get_attribute("name")
-    labelObject = webdriver.find_element_by_xpath("//label[@for=({})]".format(name))
+    labelObject = None
+    if name == "" or name is None:
+        labelObject = webdriver.find_element_by_xpath("//input[@id='{}']//parent::label".format(inputObject.get_attribute("id")))
+    else:
+        labelObject = webdriver.find_element_by_xpath("//label[@for=({})]".format(name))
     return labelObject
 
 def getInnerText(inputObject, webdriver):
@@ -28,7 +32,7 @@ def getBoundingBoxCoords(objectInContext, webdriver):
     location['x_2'] = objectInContext.location['x'] + objectInContext.size['width']
     location['y_2'] = objectInContext.location['y'] + objectInContext.size['height']
     if objectInContext.tag_name == "input" and objectInContext.get_attribute("type") in ["checkbox", "radio"]:
-        objectLabel = getLabelForInput(objectInContext)
+        objectLabel = getLabelForInput(objectInContext, webdriver)
         labelLocation = getBoundingBoxCoords(objectLabel, webdriver)
         location = combineLocations(location, labelLocation)
     return location
@@ -41,12 +45,15 @@ def combineLocations(location, labelLocation):
     return location
 
 def saveScreenToFile(seleniumWebDriver):
-    DIRNAME = os.getenv("DATADUMPDIR")
+    DIRNAME = os.getenv("JIMINY_LOGDIR")
     if DIRNAME is None:
         DIRNAME = "./"
-    fileString = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    fileString = datetime.datetime.now().strftime("%Y%m%d-%H%M%S%f")
     saveString = "{}/{}.png".format(DIRNAME, fileString)
     seleniumWebDriver.get_screenshot_as_file(saveString)
+    img = cv2.imread(saveString)
+    img = img[:300, :160]
+    cv2.imwrite(saveString, img)
     return saveString
 
 def getPixelsFromFile(fname):
@@ -72,9 +79,52 @@ def getObjectType(seleniumObject):
     """
     Returns the type of object in jiminy
     """
-    if seleniumObject.tag_name == "button" or (seleniumObject.tag_name == "input" and seleniumObject.get_attribute("type") == "submit") or seleniumObject.tag_name == "a":
+    tag_name = seleniumObject.tag_name
+    type_name = seleniumObject.get_attribute("type")
+
+    if tag_name == "button" or (tag_name == "input" and type_name == "text") or tag_name == "a":
         return "click"
-    if seleniumObject.tag_name == "input":
+    if tag_name == "input":
+        if type_name == "radio":
+            return type_name
+        elif type_name == "checkbox":
+            return type_name
         return "input"
-    if seleniumObject.tag_name == "p" or seleniumObject.tag_name == "div":
+    if tag_name == "p" or tag_name == "div":
         return "text"
+    return "na"
+
+def contains(ob, obj):
+    if ob == obj:
+        return False
+    count = 0
+    if ob.boundingBox["x_1"] <= obj.boundingBox["x_1"]:
+        count+=1
+    if ob.boundingBox["y_1"] <= obj.boundingBox["y_1"]:
+        count+=1
+    if ob.boundingBox["x_2"] >= obj.boundingBox["x_2"]:
+        count+=1
+    if ob.boundingBox["y_2"] >= obj.boundingBox["y_2"]:
+        count+=1
+    if count == 4:
+        return True
+
+def is_ancestor(obj, objectList):
+    for ob in objectList:
+        if contains(obj, ob):
+            return True
+    return False
+
+def remove_ancestors(objectList):
+    size_old = len(objectList) + 1
+    size = len(objectList)
+    while size < size_old:
+        objectList_n = []
+        for obj in objectList:
+            if is_ancestor(obj, objectList):
+                continue
+            objectList_n.append(obj)
+        objectList = objectList_n
+        size, size_old = len(objectList), size
+    objectList = list(set(objectList))
+    return objectList

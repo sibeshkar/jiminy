@@ -1,5 +1,4 @@
 from jiminy.wrappers.experimental import JiminyActionWrapper, JiminyActionState
-from simple_pid import PID
 from jiminy.vectorized import Env
 from jiminy.spaces import vnc_event
 

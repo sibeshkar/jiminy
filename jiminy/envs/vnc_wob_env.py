@@ -5,6 +5,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.events import EventFiringWebDriver, AbstractEventListener
+from jiminy.utils.webloader.utils import checkHidden
 from jiminy import spaces
 import numpy as np
 import time
@@ -57,21 +58,21 @@ class SeleniumWoBEnv(DummyVNCEnv):
         self.started = True
 
     def _reset(self):
-        action_list = []
-        for i in range(self.n):
-            action_list.append(self.action_space.sample())
-            action_list[-1].buttonmask = 1
-        self._step(action_list)
-        action_list = []
-        for i in range(self.n):
-            action_list.append(self.action_space.sample())
-            action_list[-1].buttonmask = 0
-        obs, _, _, _ = self._step(action_list)
+        obs = [self._reset_runner(index) for index in range(self.n)]
         return obs
 
     def _reset_runner(self, index):
-        self._step_runner(index, self.action_space.sample())
-        obs, _, _, _ = self._step_runner(index, self.action_space.sample())
+        self.web_driver_list[index].loadPage(self.remotes[index])
+        element = self.web_driver_list[index].driver.find_elements_by_id("sync-task-cover")[0]
+        while 1:
+            if not checkHidden(self.web_driver_list[index].driver, element):
+                action = self.action_space.sample()
+                action.buttonmask = 1
+                self._step_runner(index, action)
+                action.buttonmask = 0
+                obs, _, _, _ = self._step_runner(index, action)
+            else:
+                break
         return obs
 
     def step_runner(self, index, action):

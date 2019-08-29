@@ -20,6 +20,11 @@ class Env(Env):
     def _reset_runner(self, index):
         raise NotImplementedError
 
+    def step_runner(self, index, action):
+        return self._step_runner(index, action)
+
+    def _step_runner(self, index, action):
+        raise NotImplementedError
 
 class Wrapper(Env, Wrapper):
     """Use this instead of gym.Wrapper iff you're wrapping a vectorized env,
@@ -48,11 +53,6 @@ class Wrapper(Env, Wrapper):
     def configure(self, **kwargs):
         self.env.configure(**kwargs)
 
-    def step_runner(self, index, action):
-        return self._step_runner(index, action)
-
-    def _step_runner(self, index, action):
-        raise NotImplementedError
 
 class ObservationWrapper(Wrapper, ObservationWrapper):
     def _observation(self, observation):
@@ -61,6 +61,10 @@ class ObservationWrapper(Wrapper, ObservationWrapper):
         for i, obs in enumerate(observation):
             obs_list.append(self.observation_runner(i, obs))
         return obs_list
+
+    def _step_runner(self, index, action):
+        observation, reward, done, info = self.env.step_runner(index, action)
+        return self.observation_runner(index, observation), reward, done, info
 
     def observation_runner(self, index, observation):
         return self._observation_runner(index, observation)
@@ -72,4 +76,16 @@ class RewardWrapper(Wrapper, RewardWrapper):
     pass
 
 class ActionWrapper(Wrapper, ActionWrapper):
+    def _step_runner(self, index, action):
+        action = self.action_runner(action)
+        return self.env.step_runner(index, action)
+
+    def action_runner(self, action):
+        return self._action_runner(action)
+    def _action_runner(self, action):
+        raise NotImplementedError
+    def reverse_action_runner(self, action):
+        return self._reverse_action_runner(action)
+    def _reverse_action_runner(self, action):
+        raise NotImplementedError
     pass

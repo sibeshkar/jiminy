@@ -17,6 +17,7 @@ from jiminy import wrappers
 
 logger = logging.getLogger()
 
+
 def main():
     parser = argparse.ArgumentParser(description=None)
     parser.add_argument('-v', '--verbose', action='count', dest='verbosity', default=0, help='Set verbosity.')

@@ -21,7 +21,7 @@ def process_text(text):
 
 def pad(vector, length, axis=0):
     pad_width = [(0,0) for _ in range(len(vector.shape))]
-    pad_width[axis] = (0, length)
+    pad_width[axis] = (0, length - vector.shape[axis])
     return np.pad(vector, pad_width, 'constant')
 
 def load_lines_ff(fname):
@@ -30,9 +30,9 @@ def load_lines_ff(fname):
     lines = [line.strip() for line in lines]
     return lines
 
-def get_action_probability_pair(x,y,bm,probs):
-    action_log_prob = np.log(tf.squeeze(probs[0])[x]) + \
-        np.log(tf.squeeze(probs[1])[y]) + \
-        np.log(tf.squeeze(probs[2])[bm])
-    return vnc_event.PointerEvent(x+1, y+1, bm), action_log_prob
+def get_action_probability(x,probs):
+    action_log_prob = np.log(probs[x])
+    return action_log_prob
 
+def process_bounding_box(boundingBox):
+    return [boundingBox.x1, boundingBox.y1, boundingBox.x2, boundingBox.y2]

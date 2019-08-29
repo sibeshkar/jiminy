@@ -89,6 +89,7 @@ class NumpyScreen(object):
                     self._unpaint_cursor()
                     self._paint_cursor()
 
+
     def apply(self, framebuffer_update):
         with self.lock:
             self._has_initial_framebuffer_update = True

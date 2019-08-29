@@ -432,7 +432,7 @@ class VNCProxyServer(protocol.Protocol, object):
         if self.server_log:
             self.server_log.close()
 
-    def _error(self, e):
+    def _error(self, e):fbs_writer
         logger.error('[%s] Connection from client aborting with error: %s', self.id, e)
         traceback.print_exc()
         if self.error_buffer:
