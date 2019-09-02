@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 from PIL import Image
 import pytesseract as pt
+import re
 
 class PixelToBetadomTransformation(Transformation):
     def __init__(self, font_family='courier', img_shape=[None, None, 3]):
@@ -10,7 +11,6 @@ class PixelToBetadomTransformation(Transformation):
                 input_dict={"img" : img_shape},
                 output_dict={"betadom" : [None, 10]})
         self.font_family = font_family
-        self.url_regex = 'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+'
         self.text_regex = '[a-zA-Z0-9 ]*'
 
 class PixelToSelectedText(Transformation):
@@ -107,6 +107,27 @@ class PixelToElements(Transformation):
 
         return seperated_part_list
 
+class PixelToURL(Transformation):
+    def __init__(self, image_shape=[None, None, 3], url_regex=''):
+        super(PixelToURL, self).__init__(name="pixel-to-URL-transformation",
+                input_dict={"img" : image_shape},
+                output_dict={"URL" : tuple([])})
+        if len(url_regex) > 4:
+            self.url_regex = url_regex
+        else:
+            self.url_regex = r"\w*(?:(?:\.\w*)+)(?:(?:/(?:[\w\.]*))*)(?:.\w*)"
+
+
+    def _forward(self, inputs):
+        img = inputs["img"]
+        grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        ret, threshold = cv2.threshold(grayscale[80:160], 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        topbar_text = pt.image_to_string(threshold)
+        url_list = re.findall(self.url_regex, topbar_text)
+        if len(url_list) < 1:
+            raise ValueError("No URLs found in browser search bar")
+        return url_list[0]
+
 
 def process_contour(index, img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -146,7 +167,6 @@ if __name__ == "__main__":
     pix2text = PixelToSelectedText()
     print(pix2text.forward(inputs))
     pix2parts = PixelToElements()
-    parts = pix2parts.forward(inputs)["parts"]
-    print(len(parts))
-    for i, part in enumerate(parts):
-        cv2.imwrite('paras-{}.png'.format(i), part)
+    pix2url = PixelToURL()
+    print(pix2url.forward(inputs))
+    print(pix2parts.forward(inputs))
