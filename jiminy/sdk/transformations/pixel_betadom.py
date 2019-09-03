@@ -17,7 +17,7 @@ class PixelToSelectedText(Transformation):
     def __init__(self, image_shape=[None, None, 3]):
         super(PixelToSelectedText, self).__init__(name="pixel-to-selected-text",
                 input_dict={"img" : image_shape},
-                output_dict={"text" : (1,)})
+                output_dict={"selected-text" : (1,)})
 
     def _forward(self, inputs):
         img = inputs["img"]
@@ -51,7 +51,9 @@ class PixelToSelectedText(Transformation):
         grayscale = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
         ret, threshold = cv2.threshold(grayscale, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         text = pt.image_to_string(res)
-        return text
+        return {
+                "selected-text" : text
+                }
 
 class PixelToElements(Transformation):
     def __init__(self, image_shape=[None, None, 3]):
@@ -111,7 +113,7 @@ class PixelToURL(Transformation):
     def __init__(self, image_shape=[None, None, 3], url_regex=''):
         super(PixelToURL, self).__init__(name="pixel-to-URL-transformation",
                 input_dict={"img" : image_shape},
-                output_dict={"URL" : tuple([])})
+                output_dict={"url" : tuple([])})
         if len(url_regex) > 4:
             self.url_regex = url_regex
         else:

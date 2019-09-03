@@ -1,13 +1,12 @@
 import xxhash
 import time
+import numpy as np
 
 baseConfiguration = dict()
 
 class BaseGraphEntity(object):
     def __init__(self, name, input_dict={}, output_dict={}):
         assert name is not None and name != "", "Expected name to be something meaningful, found: {}".format(name)
-        assert input_dict is not None, "Expected input_dict to not be None"
-        assert output_dict is not None, "Expected output_dict to not be None"
         self.name = name
         self.input_dict = input_dict
         self.output_dict = output_dict
@@ -15,6 +14,10 @@ class BaseGraphEntity(object):
         self.configuration = None
 
     def forward(self, inputs):
+        assert inputs is not None and isinstance(inputs, dict), "inputs should be a dict: {}".format(inputs)
+        if self.input_dict is not None:
+            for key in self.input_dict:
+                assert key in inputs, "Can not find key: {} required for input in: {}".format(key, inputs)
         return self._forward(inputs)
 
     def _forward(self, inputs):
@@ -121,8 +124,10 @@ class Transformation(BaseGraphEntity):
         assert False, "Transformation objects do not have persistent values, call the transformation with a block"
 
     def __call__(self, source, target):
-        assert source.output_dict == self.input_dict, "Type mismatch: {} and {} in input to Transformation: {}".format(source.output_dict, self.input_dict, self.name)
-        assert self.output_dict == target.input_dict, "Type mismatch: {} and {} in output to Transformation: {}".format(target.input_dict, self.output_dict, self.name)
+        if self.input_dict is not None:
+            assert source.output_dict == self.input_dict, "Type mismatch: {} and {} in input to Transformation: {}".format(source.output_dict, self.input_dict, self.name)
+        if self.output_dict is not None:
+            assert np.array([key in target.input_dict for key in self.output_dict]).all(), "Type mismatch: {} and {} in output to Transformation: {}".format(target.input_dict, self.output_dict, self.name)
 
         baseConfiguration["graph"].add_edge(source, target, self)
 
