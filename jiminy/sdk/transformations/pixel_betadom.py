@@ -88,7 +88,7 @@ class PixelToElements(Transformation):
             if h == img.shape[0] and w == img.shape[1]:
                 continue
 
-            seperated_parts.append(img[y:y+h,x:x+w])
+            seperated_parts.append((img[y:y+h,x:x+w], x, y, w, h))
 
         if inverse == cv2.THRESH_BINARY :
             reverse_invert = cv2.THRESH_BINARY_INV
@@ -99,7 +99,7 @@ class PixelToElements(Transformation):
         while len(seperated_parts):
             seperated_part_running = []
             for part in seperated_parts:
-                parts = self._forward_implementation(part, reverse_invert)
+                parts = self._forward_implementation(part[0], reverse_invert)
                 if parts == []:
                     seperated_part_list.append(part)
                     continue
@@ -128,7 +128,9 @@ class PixelToURL(Transformation):
         url_list = re.findall(self.url_regex, topbar_text)
         if len(url_list) < 1:
             raise ValueError("No URLs found in browser search bar")
-        return url_list[0]
+        return {
+                "url" : url_list[0]
+                }
 
 
 def process_contour(index, img):
@@ -164,11 +166,16 @@ def process_contour(index, img):
 
 if __name__ == "__main__":
     inputs = {
-            "img" : cv2.imread("/Users/prannayk/Desktop/shamir-selected.png")
+            "img" : cv2.imread("/Users/prannayk/Desktop/keep-title.png")
             }
     pix2text = PixelToSelectedText()
     print(pix2text.forward(inputs))
     pix2parts = PixelToElements()
     pix2url = PixelToURL()
     print(pix2url.forward(inputs))
-    print(pix2parts.forward(inputs))
+    for idx, part in enumerate(pix2parts.forward(inputs)["parts"]):
+        cv2.imwrite("part-{}.png".format(idx), part[0])
+        text = pt.image_to_string(part[0])
+        print(text)
+        if "Take a note" in text or "Title" in text:
+            print(part[1:])

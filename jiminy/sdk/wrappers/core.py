@@ -21,7 +21,7 @@ class BaseGraphEntity(object):
         return self._forward(inputs)
 
     def _forward(self, inputs):
-        raise NotImplementedError
+        raise NotImplementedError(self.name)
 
     def initializer(self, name="default"):
         if hasattr(self, 'configuration') and self.configuration is not None:
@@ -61,8 +61,6 @@ class BaseGraph(object):
         self.edges_outgoing = dict()
         self.transformations = dict()
         self.name = name
-        self.input_dict = dict()
-        self.output_dict = dict()
 
     def as_default(self):
         class BaseGraphScopeHandler(object):
@@ -86,13 +84,13 @@ class BaseGraph(object):
         assert isinstance(node, Block), "Node: {} is not of type Block".format(node)
         assert not node.name in self.nodes, "Node by name {} is already present in the graph".format(node.name)
         self.nodes[node.name] = node
-        self.edges_incoming[node.name] = dict()
-        self.edges_outgoing[node.name] = dict()
+        self.edges_incoming[node.name] = list()
+        self.edges_outgoing[node.name] = list()
 
     def add_edge(self, n_in, n_out, transformation):
         self.transformations[transformation.name] = transformation
-        self.edges_outgoing[n_in.name][n_out.name] = transformation.name
-        self.edges_incoming[n_out.name][n_in.name] = transformation.name
+        self.edges_outgoing[n_in.name].append((n_out.name, transformation.name))
+        self.edges_incoming[n_out.name].append((n_in.name, transformation.name))
 
     def __str__(self):
         return "{}\n".format(self.name) + str({

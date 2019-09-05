@@ -10,7 +10,7 @@ class ImageDataBlock(Block):
                     "img" : [None, None, 3]
                     })
 
-        def _forward(self, inputs):
+    def _forward(self, inputs):
             # perform pre-processing
             return inputs
 

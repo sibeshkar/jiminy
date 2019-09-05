@@ -1,7 +1,8 @@
-from jiminy.sdk.wrappers import BaseGraph
+from jiminy.sdk.wrappers import BaseGraph, Session
 from jiminy.sdk.transformations import PixelToSelectedText, PixelToURL, Identity
 from jiminy.sdk.blocks import ImageDataBlock, PossibleActionList, SelectedTextBlock
 import numpy as np
+import cv2
 
 def dummy_ui_handler_fn(actionList):
     return np.random.choice(actionList)
@@ -19,3 +20,13 @@ if __name__ == "__main__":
         pix2selectedText(dataBlock, selectedTextBlock)
         pix2url(dataBlock, selectedTextBlock)
         Identity()(selectedTextBlock, chosenActionBlock)
+
+    session = Session("session-1", internal_graph=graph)
+    with session.as_default() as sess:
+        img = cv2.imread("/Users/prannayk/Desktop/paul-graham-3.png")
+        inputs = {
+                "img" : img
+                }
+        sess.init_dynamic_graph()
+        output = session.run(inputs, input_nodes=[dataBlock.name],
+                output_nodes=[chosenActionBlock.name])

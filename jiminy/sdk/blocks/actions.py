@@ -10,7 +10,10 @@ class SelectedTextBlock(Block):
 
     def _forward(self, inputs):
         selected_text = inputs["selected-text"]
-        soup = BeautifulSoup(urllib2.urlopen(inputs["url"]), features="html.parser")
+        url = inputs["url"]
+        if not("https" in url or "http" in url):
+            url = "http://" + url
+        soup = BeautifulSoup(urllib2.urlopen(url), features="html.parser")
         inputs["title"] = soup.title.string
         return inputs
 

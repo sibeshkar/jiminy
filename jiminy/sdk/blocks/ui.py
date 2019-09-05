@@ -7,7 +7,7 @@ class PossibleActionList(Block):
                 input_dict={
                     "title" : (0,),
                      "url" : (0,),
-                     "selected_text" : (0,)
+                     "selected-text" : (0,)
                     },
                 output_dict={
                     "action" : (0,)
@@ -29,7 +29,7 @@ class PossibleActionList(Block):
 
     def _filter_possible_actions(self, inputs):
         if len(self.actionList) > 4:
-            selected_text = inputs["selected_text"]
+            selected_text = inputs["selected-text"]
             if len(selected_text) > 100:
                 # for small text we only have non-summary based options
                 return self.actionList[:4]
@@ -47,5 +47,5 @@ if __name__ == "__main__":
     pal.forward(inputs={
         "title" : "Google",
         "url" : "https://google.com/",
-        "selected_text" : "hi"
+        "selected-text" : "hi"
         })
