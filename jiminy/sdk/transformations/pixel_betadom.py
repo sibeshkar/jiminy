@@ -4,6 +4,7 @@ import cv2
 from PIL import Image
 import pytesseract as pt
 import re
+import argparse
 
 class PixelToBetadomTransformation(Transformation):
     def __init__(self, font_family='courier', img_shape=[None, None, 3]):
@@ -164,9 +165,14 @@ def process_contour(index, img):
     read_text = read_text.split(' x ')
     print(read_text)
 
+arg_parser = argparse.ArgumentParser("Argument parser for testing")
+arg_parser.add_argument("--file", dest="file", type=str,
+    required=True)
+
 if __name__ == "__main__":
+    args = arg_parser.parse_args()
     inputs = {
-            "img" : cv2.imread("/Users/prannayk/Desktop/keep-title.png")
+            "img" : cv2.imread(args.file)
             }
     pix2text = PixelToSelectedText()
     print(pix2text.forward(inputs))

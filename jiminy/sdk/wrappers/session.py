@@ -1,6 +1,6 @@
 from jiminy.sdk.wrappers.core import *
 from jiminy.sdk.utilities import shapeMatcher
-from jiminy.sdk.wrappers.trigger import DynamicTrigger
+from jiminy.sdk.wrappers.trigger import TriggerTransformation
 import queue
 
 class DynamicGraph(object):
@@ -163,7 +163,7 @@ class DynamicTransformation(DynamicGraphEntity):
     def _init(self, session):
         return self.entity.initializer(name=session.name)
 
-class DynamicTriggerTransformation(DynamicTriggerTransformation):
+class DynamicTriggerTransformation(TriggerTransformation):
     def _reset(self, session_graph):
         super(DynamicTriggerTransformation, self)._reset(session_graph)
         self.executable = False

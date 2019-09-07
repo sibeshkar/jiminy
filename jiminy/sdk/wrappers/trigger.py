@@ -1,6 +1,6 @@
 from jiminy.sdk.wrappers.core import Transformation
 
-class DynamicTrigger(Transformation):
+class TriggerTransformation(Transformation):
     def with_trigger(self, keyName, checkFn):
         if isinstance(keyName, str):
             self.keyName = [keyName]
