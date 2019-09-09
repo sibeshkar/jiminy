@@ -15,7 +15,7 @@ argparser.add_argument("--theme", dest="theme", type=str,
 args = argparser.parse_args()
 
 COMBINATIONS = [
-        (keyboard.Key.alt, keyboard.Key.space),
+        (keyboard.Key.alt, keyboard.Key.f1),
         ]
 
 current = set()
