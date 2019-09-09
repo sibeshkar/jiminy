@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='jiminy',
-      version='0.23.5',
+      version='0.24.0',
       description="Jiminy is an imitation learning library.",
       url='https://github.com/sibeshkar/jiminy',
       author='Boxware',
@@ -24,6 +24,8 @@ setup(name='jiminy',
           'selenium>=3.140.0',
           'pydot>=1.3',
           'graphviz>=0.11'
+          'pyautogui>=0.9.47',
+          'pynput',
       ],
       package_data={'jiminy': ['runtimes.yml', 'runtimes/flashgames.json']},
       tests_require=['pytest']
