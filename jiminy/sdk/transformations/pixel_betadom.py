@@ -51,7 +51,18 @@ class PixelToSelectedText(Transformation):
         res = cv2.bitwise_and(img, img, mask=mask_covering)
         grayscale = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
         ret, threshold = cv2.threshold(grayscale, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        text = pt.image_to_string(res)
+
+        contours, hierarchy = cv2.findContours(mask_covering, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        mask_covering = np.zeros(mask.shape, np.uint8)
+        text = ""
+        for cnt in contours:
+            size = cv2.contourArea(cnt)
+            x,y,w,h = cv2.boundingRect(cnt)
+            if size < 1000:
+                continue
+            cv2.drawContours(mask_covering, [cnt], -1, (255,255,255), -1)
+            text += pt.image_to_string(threshold[y:y+h, x:x+w])
+
         return {
                 "selected-text" : text
                 }
