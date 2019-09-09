@@ -8,7 +8,7 @@ animation = pg.easeInOutQuad
 animationTime = 0.2
 
 class GoogleKeepRobot(Block):
-    def __init__(self, chrome, theme="dark", *args, **kwargs):
+    def __init__(self, chrome, theme="dark", small=True, *args, **kwargs):
         super(GoogleKeepRobot, self).__init__(name="GoogleKeepRobot",
                 input_dict={
                     "title" : (1,),
@@ -16,6 +16,12 @@ class GoogleKeepRobot(Block):
                     })
         self.theme = theme
         self.chrome = chrome
+        self.small = small
+        if small :
+            self.theme += "/small"
+            self.regionTabs = (self.chrome[0], self.chrome[1], (self.chrome[2] - self.chrome[0]), 75)
+        else :
+            self.regionTabs =(self.chrome[0]*2, self.chrome[1]*2, 2*(self.chrome[2] - self.chrome[0]), 150)
 
     def _forward(self, inputs):
         typeText = "{}\n{}".format(inputs["title"], inputs["selected-text"])
@@ -23,7 +29,7 @@ class GoogleKeepRobot(Block):
         for path in ['current-tab', 'current-tab-other']:
             try:
                 px, py = pg.locateCenterOnScreen('../blocks/assets/{}/{}.png'.format(self.theme, path),
-                        region=(self.chrome[0]*2, self.chrome[1]*2, 2*(self.chrome[2] - self.chrome[0]), 150))
+                        region=self.regionTabs)
                 break
             except:
                 continue
@@ -32,8 +38,8 @@ class GoogleKeepRobot(Block):
         for icon in ['keep-1.png', 'keep-2.png', 'keep-3.png', 'keep-4.png']:
             try:
                 tabx, taby = pg.locateCenterOnScreen('../blocks/assets/{}/{}'.format(self.theme, icon),
-                        region=(self.chrome[0]*2, self.chrome[1]*2, 2*(self.chrome[2] - self.chrome[0]), 100))
-                pg.moveTo(tabx // 2, taby // 2, animationTime, animation)
+                        region=self.regionTabs)
+                pg.moveTo(tabx // (1 if self.small else 2), taby // (1 if self.small else 2), animationTime, animation)
                 self.hard_click()
                 break
             except:
@@ -42,16 +48,16 @@ class GoogleKeepRobot(Block):
         if tabx is None:
             for newT in ['new-tab', 'new-tab-light']:
                 try:
-                    tabx, taby = pg.locateCenterOnScreen('../blocks/assets/{}/{}.png'.format(self.theme, newT), region=(self.chrome[0]*2, self.chrome[1]*2, 2*(self.chrome[2] - self.chrome[0]), 60))
+                    tabx, taby = pg.locateCenterOnScreen('../blocks/assets/{}/{}.png'.format(self.theme, newT), region=self.regionTabs)
                     break
                 except:
                     continue
-            pg.moveTo(tabx // 2, taby // 2, animationTime, animation)
+            pg.moveTo(tabx // (1 if self.small else 2), taby // (1 if self.small else 2), animationTime, animation)
             self.hard_click()
             pg.write("https://keep.google.com/u/0/#home\n")
             time.sleep(15)
         t = time.time()
-        cross = pg.screenshot(region=(self.chrome[0]*2 + 50, (self.chrome[1] + 85)*2, 30, 30)).convert('RGB')
+        cross = pg.screenshot(region=(self.chrome[0]*(1 if self.small else 2) + 50, (self.chrome[1] + 85)*(1 if self.small else 2), 15*(1 if self.small else 2), 15*(1 if self.small else 2))).convert('RGB')
         if (np.array(cross) > 200).all():
             self.keep_theme = "light"
         else:
@@ -61,10 +67,10 @@ class GoogleKeepRobot(Block):
         pg.hotkey('command', 'up')
         time.sleep(0.5)
         x, y = pg.locateCenterOnScreen('../blocks/assets/{}/keep-note-keyframe.png'.format(self.keep_theme),
-                region=(self.chrome[0]*2, self.chrome[1]*2, 2*self.chrome[2], 2*self.chrome[3]))
+                region=(self.chrome[0]*(1 if self.small else 2), self.chrome[1]*(1 if self.small else 2), (1 if self.small else 2)*self.chrome[2], (1 if self.small else 2)*self.chrome[3]))
         cx, cy = x, y
 
-        pg.moveTo(x // 2, y // 2, animationTime, animation)
+        pg.moveTo(x // (1 if self.small else 2), y // (1 if self.small else 2), animationTime, animation)
         self.hard_click()
         pc.copy(inputs["selected-text"])
         pg.hotkey("command", "v")
@@ -74,9 +80,9 @@ class GoogleKeepRobot(Block):
         t = time.time()
         x, y = pg.locateCenterOnScreen('../blocks/assets/{}/keep-close.png'.format(self.keep_theme),
                 region=(self.chrome[0]*2, self.chrome[1]*2, 2*self.chrome[2], 2*self.chrome[3]))
-        pg.moveTo(x // 2, y //2, animationTime, animation)
+        pg.moveTo(x // (1 if self.small else 2), y //(1 if self.small else 2), animationTime, animation)
         self.hard_click()
-        pg.moveTo((px // 2) - 15, py // 2, animationTime, animation)
+        pg.moveTo((px // (1 if self.small else 2)) - 15, py // (1 if self.small else 2), animationTime, animation)
         self.hard_click()
 
     def hard_click(self):
