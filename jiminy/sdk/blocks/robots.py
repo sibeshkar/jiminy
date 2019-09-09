@@ -22,25 +22,27 @@ class GoogleKeepRobot(Block):
         px, py = None, None
         for path in ['current-tab', 'current-tab-other']:
             try:
-                px, py = pg.locateCenterOnScreen('/Users/prannayk/ongoing_projects/jiminy-project/jiminy/jiminy/sdk/blocks/assets/{}/{}.png'.format(self.theme, path),
+                px, py = pg.locateCenterOnScreen('../blocks/assets/{}/{}.png'.format(self.theme, path),
                         region=(self.chrome[0]*2, self.chrome[1]*2, 2*(self.chrome[2] - self.chrome[0]), 150))
                 break
             except:
                 continue
         tabx, taby = None, None
+        t = time.time()
         for icon in ['keep-1.png', 'keep-2.png', 'keep-3.png', 'keep-4.png']:
             try:
-                tabx, taby = pg.locateCenterOnScreen('/Users/prannayk/ongoing_projects/jiminy-project/jiminy/jiminy/sdk/blocks/assets/{}/{}'.format(self.theme, icon),
+                tabx, taby = pg.locateCenterOnScreen('../blocks/assets/{}/{}'.format(self.theme, icon),
                         region=(self.chrome[0]*2, self.chrome[1]*2, 2*(self.chrome[2] - self.chrome[0]), 100))
                 pg.moveTo(tabx // 2, taby // 2, animationTime, animation)
                 self.hard_click()
                 break
             except:
                 continue
+        print("Icon finding: ", time.time() - t)
         if tabx is None:
             for newT in ['new-tab', 'new-tab-light']:
                 try:
-                    tabx, taby = pg.locateCenterOnScreen('/Users/prannayk/ongoing_projects/jiminy-project/jiminy/jiminy/sdk/blocks/assets/{}/{}.png'.format(self.theme, newT), region=(self.chrome[0]*2, self.chrome[1]*2, 2*(self.chrome[2] - self.chrome[0]), 60))
+                    tabx, taby = pg.locateCenterOnScreen('../blocks/assets/{}/{}.png'.format(self.theme, newT), region=(self.chrome[0]*2, self.chrome[1]*2, 2*(self.chrome[2] - self.chrome[0]), 60))
                     break
                 except:
                     continue
@@ -55,7 +57,10 @@ class GoogleKeepRobot(Block):
         else:
             self.keep_theme = "dark"
         print("Using {} theme".format(self.keep_theme))
-        x, y = pg.locateCenterOnScreen('/Users/prannayk/ongoing_projects/jiminy-project/jiminy/jiminy/sdk/blocks/assets/{}/keep-note-keyframe.png'.format(self.keep_theme),
+        pg.press('esc')
+        pg.hotkey('command', 'up')
+        time.sleep(0.5)
+        x, y = pg.locateCenterOnScreen('../blocks/assets/{}/keep-note-keyframe.png'.format(self.keep_theme),
                 region=(self.chrome[0]*2, self.chrome[1]*2, 2*self.chrome[2], 2*self.chrome[3]))
         cx, cy = x, y
 
@@ -67,7 +72,7 @@ class GoogleKeepRobot(Block):
         pc.copy(inputs["title"])
         pg.hotkey("command", "v")
         t = time.time()
-        x, y = pg.locateCenterOnScreen('/Users/prannayk/ongoing_projects/jiminy-project/jiminy/jiminy/sdk/blocks/assets/{}/keep-close.png'.format(self.keep_theme),
+        x, y = pg.locateCenterOnScreen('../blocks/assets/{}/keep-close.png'.format(self.keep_theme),
                 region=(self.chrome[0]*2, self.chrome[1]*2, 2*self.chrome[2], 2*self.chrome[3]))
         pg.moveTo(x // 2, y //2, animationTime, animation)
         self.hard_click()
